@@ -1,4 +1,5 @@
 import { Image, StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import Card from "./Card";
 import { categoryLabel } from "../utils/categories";
 import { colors } from "../theme";
@@ -6,13 +7,15 @@ import { imageUrl } from "../services/api";
 
 export default function ReportCard({ report }) {
   const image = report.imageUrl || report.imageUrls?.[0];
+  const likesCount = report.likesCount || report.likes || 0;
 
   return (
     <Card style={styles.card}>
       {image ? (
-        <Image source={{ uri: imageUrl(image) }} style={styles.image} />
+        <Image source={{ uri: imageUrl(image) }} style={styles.image} resizeMode="cover" />
       ) : (
         <View style={styles.placeholder}>
+          <Ionicons name="image-outline" size={34} color="#94a3b8" />
           <Text style={styles.placeholderText}>Aucun visuel</Text>
         </View>
       )}
@@ -21,12 +24,15 @@ export default function ReportCard({ report }) {
         <Text style={styles.title}>{report.title}</Text>
         <Text numberOfLines={2} style={styles.description}>{report.description}</Text>
         <View style={styles.locationBox}>
-          <Text style={styles.location}>📍 {report.province || "-"} / {report.commune || "-"}</Text>
+          <View style={styles.locationLine}>
+            <Ionicons name="location-outline" size={16} color={colors.primary} />
+            <Text style={styles.location}>{report.province || "-"} / {report.commune || "-"}</Text>
+          </View>
           <Text style={styles.coords}>
             {report.location?.lat?.toFixed?.(4) || report.location?.lat}, {report.location?.lng?.toFixed?.(4) || report.location?.lng}
           </Text>
         </View>
-        <Text style={styles.likes}>{report.likesCount || 0} personne concernée</Text>
+        <Text style={styles.likes}>{likesCount} personne{likesCount > 1 ? "s" : ""} concernée{likesCount > 1 ? "s" : ""}</Text>
       </View>
     </Card>
   );
@@ -44,6 +50,7 @@ const styles = StyleSheet.create({
   placeholder: {
     alignItems: "center",
     backgroundColor: "#eef2f7",
+    gap: 8,
     height: 190,
     justifyContent: "center"
   },
@@ -77,6 +84,11 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     gap: 4,
     padding: 12
+  },
+  locationLine: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 6
   },
   location: {
     color: colors.text,

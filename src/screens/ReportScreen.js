@@ -1,6 +1,7 @@
 import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useMemo, useState } from "react";
 import Screen from "../components/Screen";
 import BrandHeader from "../components/BrandHeader";
@@ -11,7 +12,7 @@ import { useAuth } from "../context/AuthContext";
 import { api } from "../services/api";
 import { colors } from "../theme";
 import { categories } from "../utils/categories";
-import { defaultLocation, provinces } from "../utils/locations";
+import { defaultLocation } from "../utils/locations";
 
 const roles = [
   { key: "concerned", label: "Je suis concerné" },
@@ -42,7 +43,7 @@ export default function ReportScreen() {
   const title = useMemo(() => {
     if (step === 1) return "Que voulez-vous signaler ?";
     if (step === 2) return "Quel est votre rôle ?";
-    if (step === 3) return "Ajoutez une photo si possible.";
+    if (step === 3) return "Ajoutez une photo";
     if (step === 4) return "Détails du problème";
     return "Localisation";
   }, [step]);
@@ -53,11 +54,13 @@ export default function ReportScreen() {
 
   function selectCategory(category) {
     update("category", category);
+    setError("");
     setTimeout(() => setStep(2), 120);
   }
 
   function selectRole(role) {
     update("role", role);
+    setError("");
     setTimeout(() => setStep(3), 120);
   }
 
@@ -68,12 +71,21 @@ export default function ReportScreen() {
       return;
     }
     const result = await ImagePicker.launchCameraAsync({ quality: 0.75 });
-    if (!result.canceled) update("image", result.assets[0]);
+    if (!result.canceled) {
+      update("image", result.assets[0]);
+      setError("");
+    }
   }
 
   async function choosePhoto() {
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.75 });
-    if (!result.canceled) update("image", result.assets[0]);
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.75
+    });
+    if (!result.canceled) {
+      update("image", result.assets[0]);
+      setError("");
+    }
   }
 
   async function useCurrentLocation() {
@@ -114,6 +126,8 @@ export default function ReportScreen() {
       body.append("lat", String(form.lat));
       body.append("lng", String(form.lng));
       body.append("address", `${form.province}, ${form.commune}`);
+      body.append("reporterRole", form.role);
+
       if (form.image) {
         body.append("images", {
           uri: form.image.uri,
@@ -137,7 +151,9 @@ export default function ReportScreen() {
     return (
       <Screen>
         <Card style={styles.successCard}>
-          <Text style={styles.successIcon}>✓</Text>
+          <View style={styles.successIcon}>
+            <Ionicons name="checkmark" size={34} color={colors.primary} />
+          </View>
           <Text style={styles.successTitle}>Alerte envoyée !</Text>
           <Text style={styles.muted}>
             {isAuthenticated ? "Votre alerte est publiée immédiatement." : "Votre signalement est en attente de validation."}
@@ -178,13 +194,13 @@ export default function ReportScreen() {
               <Text style={styles.choiceText}>{role.label}</Text>
             </Pressable>
           ))}
-          <Text style={styles.muted}>La suite s’ouvre automatiquement après votre choix.</Text>
+          <Text style={styles.muted}>La suite s'ouvre automatiquement après votre choix.</Text>
         </Card>
       ) : null}
 
       {step === 3 ? (
         <Card style={styles.stack}>
-          {form.image ? <Image source={{ uri: form.image.uri }} style={styles.preview} /> : null}
+          {form.image ? <Image source={{ uri: form.image.uri }} style={styles.preview} resizeMode="cover" /> : null}
           <Button title="Prendre une photo" onPress={takePhoto} />
           <Button title="Choisir une image" variant="secondary" onPress={choosePhoto} />
           <Button title="Continuer sans image" variant="secondary" onPress={() => setStep(4)} />
@@ -289,7 +305,8 @@ const styles = StyleSheet.create({
     color: colors.muted,
     fontSize: 15,
     fontWeight: "700",
-    lineHeight: 22
+    lineHeight: 22,
+    textAlign: "center"
   },
   error: {
     backgroundColor: "#fef2f2",
@@ -305,14 +322,11 @@ const styles = StyleSheet.create({
     padding: 24
   },
   successIcon: {
+    alignItems: "center",
     backgroundColor: "#dcfce7",
     borderRadius: 40,
-    color: colors.primary,
-    fontSize: 34,
-    fontWeight: "900",
     height: 72,
-    lineHeight: 72,
-    textAlign: "center",
+    justifyContent: "center",
     width: 72
   },
   successTitle: {

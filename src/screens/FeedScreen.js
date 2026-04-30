@@ -31,7 +31,7 @@ export default function FeedScreen({ navigation }) {
   }, [loadReports]);
 
   return (
-    <Screen>
+    <Screen refreshControl={<RefreshControl refreshing={loading} onRefresh={loadReports} />}>
       <BrandHeader
         eyebrow="Fil citoyen"
         title="Alertes autour de vous"
@@ -51,10 +51,7 @@ export default function FeedScreen({ navigation }) {
           <Text style={styles.muted}>Soyez le premier à signaler.</Text>
         </Card>
       ) : null}
-      <View
-        refreshControl={<RefreshControl refreshing={loading} onRefresh={loadReports} />}
-        style={styles.list}
-      >
+      <View style={styles.list}>
         {reports.map((report) => (
           <ReportCard key={report._id || report.id} report={report} />
         ))}

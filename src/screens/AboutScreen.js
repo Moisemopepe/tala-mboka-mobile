@@ -17,10 +17,10 @@ export default function AboutScreen({ navigation }) {
       <Card style={styles.stack}>
         <Text style={styles.paragraph}>
           Tala Mboka est une plateforme citoyenne qui permet de signaler facilement les problèmes du quartier :
-          routes dégradées, coupures d’électricité, insécurité, insalubrité et autres situations importantes.
+          routes dégradées, coupures d'électricité, insécurité, insalubrité et autres situations importantes.
         </Text>
         <Text style={styles.paragraph}>
-          Chaque signalement devient visible, localisé et suivi afin d’encourager des actions concrètes pour améliorer
+          Chaque signalement devient visible, localisé et suivi afin d'encourager des actions concrètes pour améliorer
           les conditions de vie.
         </Text>
       </Card>
@@ -28,12 +28,14 @@ export default function AboutScreen({ navigation }) {
         <Text style={styles.title}>Pourquoi utiliser Tala Mboka ?</Text>
         <Text style={styles.item}>• Signaler un problème en quelques secondes</Text>
         <Text style={styles.item}>• Voir les incidents autour de soi</Text>
-        <Text style={styles.item}>• Suivre l’évolution des situations signalées</Text>
+        <Text style={styles.item}>• Suivre l'évolution des situations signalées</Text>
         <Text style={styles.item}>• Contribuer à rendre son quartier plus sûr et plus propre</Text>
       </Card>
       <Card style={styles.stack}>
         <Text style={styles.title}>Développeur</Text>
-        <Text style={styles.paragraph}>Application développée par Moïse Mopepe pour encourager la participation citoyenne.</Text>
+        <Text style={styles.paragraph}>
+          Application développée par Moïse Mopepe pour encourager la participation citoyenne.
+        </Text>
         <Text style={styles.version}>Version {APP_VERSION}</Text>
       </Card>
       <Button title="Signaler maintenant" onPress={() => navigation.navigate("Signaler")} />

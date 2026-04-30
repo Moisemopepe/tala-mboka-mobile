@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from "react-native";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Screen from "../components/Screen";
 import BrandHeader from "../components/BrandHeader";
 import Button from "../components/Button";
@@ -14,7 +14,7 @@ export default function NotificationsScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  async function loadNotifications() {
+  const loadNotifications = useCallback(async () => {
     if (!isAuthenticated) return;
     setLoading(true);
     try {
@@ -26,7 +26,7 @@ export default function NotificationsScreen({ navigation }) {
     } finally {
       setLoading(false);
     }
-  }
+  }, [isAuthenticated, token]);
 
   async function markRead() {
     try {
@@ -39,12 +39,16 @@ export default function NotificationsScreen({ navigation }) {
 
   useEffect(() => {
     loadNotifications();
-  }, [isAuthenticated]);
+  }, [loadNotifications]);
 
   if (!isAuthenticated) {
     return (
       <Screen>
-        <BrandHeader eyebrow="Notifications" title="Connectez-vous" subtitle="Les notifications sont réservées aux utilisateurs connectés." />
+        <BrandHeader
+          eyebrow="Notifications"
+          title="Connectez-vous"
+          subtitle="Les notifications sont réservées aux utilisateurs connectés."
+        />
         <Button title="Aller au compte" onPress={() => navigation.navigate("Compte")} />
       </Screen>
     );
@@ -52,13 +56,21 @@ export default function NotificationsScreen({ navigation }) {
 
   return (
     <Screen>
-      <BrandHeader eyebrow="Notifications" title="Mises à jour" subtitle="Lisez tranquillement les informations importantes." />
+      <BrandHeader
+        eyebrow="Notifications"
+        title="Mises à jour"
+        subtitle="Lisez tranquillement les informations importantes."
+      />
       <View style={styles.actions}>
         <Button title="Actualiser" variant="secondary" onPress={loadNotifications} style={styles.action} />
-        <Button title="Tout lu" onPress={markRead} style={styles.action} />
+        <Button title="Tout marquer comme lu" onPress={markRead} style={styles.action} />
       </View>
       {error ? <Text style={styles.error}>{error}</Text> : null}
-      {loading ? <Card><Text style={styles.muted}>Chargement...</Text></Card> : null}
+      {loading ? (
+        <Card>
+          <Text style={styles.muted}>Chargement...</Text>
+        </Card>
+      ) : null}
       {!loading && items.length === 0 ? (
         <Card style={styles.empty}>
           <Text style={styles.emptyTitle}>Aucune notification</Text>

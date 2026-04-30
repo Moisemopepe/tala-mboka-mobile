@@ -5,7 +5,7 @@ export const categories = [
   { key: "waste", label: "Salubrité", icon: "♻️", color: "#16a34a" },
   { key: "security", label: "Insécurité", icon: "🛡️", color: "#ef4444" },
   { key: "fraud", label: "Escroquerie", icon: "⚠️", color: "#9333ea" },
-  { key: "kidnapping", label: "Autre", icon: "❓", color: "#64748b" }
+  { key: "kidnapping", label: "Autre", icon: "?", color: "#64748b" }
 ];
 
 export function categoryLabel(key) {

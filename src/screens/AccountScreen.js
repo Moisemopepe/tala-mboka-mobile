@@ -48,7 +48,11 @@ export default function AccountScreen() {
 
   return (
     <Screen>
-      <BrandHeader eyebrow="Compte" title="Rejoignez Tala Mboka" subtitle="Connectez-vous pour publier immédiatement et suivre vos alertes." />
+      <BrandHeader
+        eyebrow="Compte"
+        title="Rejoignez Tala Mboka"
+        subtitle="Connectez-vous pour publier immédiatement et suivre vos alertes."
+      />
       <Card style={styles.stack}>
         <View style={styles.switcher}>
           <Button title="Connexion" onPress={() => setMode("login")} variant={mode === "login" ? "primary" : "secondary"} style={styles.switchButton} />
