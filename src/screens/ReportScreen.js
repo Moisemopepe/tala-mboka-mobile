@@ -28,6 +28,11 @@ const initialForm = {
   servicesDisrupted: false,
   livelihoodsAffected: false,
   peopleAtRisk: false,
+  reporterName: "",
+  reporterContact: "",
+  reporterOrganization: "",
+  reporterRole: "community_member",
+  reporterConsent: false,
   locationDescription: "",
   province: defaultLocation.province,
   commune: defaultLocation.commune,
@@ -361,7 +366,8 @@ const uiText = {
 };
 
 function tr(language, key) {
-  return (uiText[language] || uiText.en)[key] || uiText.en[key] || key;
+  const safeLanguage = ["en", "fr", "es"].includes(language) ? language : "en";
+  return (uiText[safeLanguage] || uiText.en)[key] || uiText.en[key] || key;
 }
 
 export default function ReportScreen({ navigation }) {
@@ -486,6 +492,18 @@ export default function ReportScreen({ navigation }) {
     body.append("servicesDisrupted", String(payload.servicesDisrupted));
     body.append("livelihoodsAffected", String(payload.livelihoodsAffected));
     body.append("peopleAtRisk", String(payload.peopleAtRisk));
+    body.append("reporterName", payload.reporterName.trim());
+    body.append("reporterContact", payload.reporterContact.trim());
+    body.append("reporterOrganization", payload.reporterOrganization.trim());
+    body.append("reporterRole", payload.reporterRole);
+    body.append("reporterConsent", String(payload.reporterConsent));
+    body.append("channel", "mobile");
+    body.append("collectionTime", payload.collectionTime || new Date().toISOString());
+    body.append("offlineCreatedAt", payload.offlineCreatedAt || "");
+    body.append("appVersion", "mobile-mvp");
+    body.append("buildingFootprintId", payload.assetId.trim() || `${payload.province}-${payload.commune}-${Number(payload.lat).toFixed(5)}-${Number(payload.lng).toFixed(5)}`);
+    body.append("buildingFootprintName", payload.infrastructureName.trim());
+    body.append("buildingFootprintSource", payload.assetId.trim() ? "user-provided" : "gps-derived-prototype");
     body.append("province", payload.province);
     body.append("commune", payload.commune);
     body.append("lat", String(payload.lat));
@@ -509,7 +527,7 @@ export default function ReportScreen({ navigation }) {
     if (submitting || !validate(4)) return;
     setSubmitting(true);
     setApiError("");
-    const payload = { ...form };
+    const payload = { ...form, collectionTime: new Date().toISOString(), offlineCreatedAt: new Date().toISOString() };
     try {
       await sendPayload(payload);
       setSuccess({ mode: "sent", payload });
@@ -687,6 +705,16 @@ export default function ReportScreen({ navigation }) {
             <FieldBlock label={tr(form.language, "buildingId")}>
               <TextInput value={form.assetId} onChangeText={(value) => update("assetId", value.slice(0, 80))} placeholder="Optional building footprint or local ID" placeholderTextColor="#94a3b8" style={styles.input} />
             </FieldBlock>
+            <Text style={styles.smallLabel}>Reporter details for admin follow-up</Text>
+            <FieldBlock label="Name optional">
+              <TextInput value={form.reporterName} onChangeText={(value) => update("reporterName", value.slice(0, 120))} placeholder="Your name, optional" placeholderTextColor="#94a3b8" style={styles.input} />
+            </FieldBlock>
+            <FieldBlock label="Phone or email optional">
+              <TextInput value={form.reporterContact} onChangeText={(value) => update("reporterContact", value.slice(0, 160))} placeholder="Only visible to admin" placeholderTextColor="#94a3b8" style={styles.input} />
+            </FieldBlock>
+            <View style={styles.flagGrid}>
+              <ToggleRow label="Response teams may contact me" value={form.reporterConsent} onPress={() => update("reporterConsent", !form.reporterConsent)} />
+            </View>
             <Text style={styles.smallLabel}>{tr(form.language, "severity")}</Text>
             <View style={styles.severityRow}>
               {severity.map((item) => (
