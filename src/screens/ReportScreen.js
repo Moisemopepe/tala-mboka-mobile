@@ -12,11 +12,23 @@ import { categories } from "../utils/categories";
 import { defaultLocation, provinces } from "../utils/locations";
 
 const initialForm = {
+  language: "en",
   category: "residential",
   crisisType: "flood",
   damageLevel: "partial",
   title: "",
   description: "",
+  infrastructureName: "",
+  assetId: "",
+  debris: "unknown",
+  electricityStatus: "unknown",
+  healthServices: "unknown",
+  urgentNeeds: [],
+  accessBlocked: false,
+  servicesDisrupted: false,
+  livelihoodsAffected: false,
+  peopleAtRisk: false,
+  locationDescription: "",
   province: defaultLocation.province,
   commune: defaultLocation.commune,
   lat: defaultLocation.lat,
@@ -27,9 +39,13 @@ const initialForm = {
 const incidents = [
   { key: "flood", label: "Flood", icon: "water-outline", color: "#60a5fa" },
   { key: "earthquake", label: "Earthquake", icon: "pulse-outline", color: "#ef4444" },
-  { key: "fire", label: "Fire", icon: "flame-outline", color: "#f97316" },
-  { key: "conflict", label: "Conflict", icon: "shield-outline", color: "#8b5cf6" },
+  { key: "tsunami", label: "Tsunami", icon: "boat-outline", color: "#0891b2" },
+  { key: "hurricane", label: "Hurricane", icon: "thunderstorm-outline", color: "#64748b" },
+  { key: "wildfire", label: "Wildfire", icon: "flame-outline", color: "#f97316" },
   { key: "explosion", label: "Explosion", icon: "warning-outline", color: "#b45309" },
+  { key: "chemical_incident", label: "Chemical", icon: "flask-outline", color: "#16a34a" },
+  { key: "conflict", label: "Conflict", icon: "shield-outline", color: "#8b5cf6" },
+  { key: "civil_unrest", label: "Civil unrest", icon: "people-outline", color: "#db2777" },
   { key: "other", label: "Other", icon: "ellipsis-horizontal-outline", color: "#64748b" }
 ];
 
@@ -38,6 +54,315 @@ const severity = [
   { key: "partial", label: "Medium", color: colors.warning },
   { key: "complete", label: "High", color: colors.danger }
 ];
+
+const languages = [
+  { key: "en", label: "English" },
+  { key: "fr", label: "Francais" },
+  { key: "es", label: "Espanol" },
+  { key: "ar", label: "Arabic" },
+  { key: "zh", label: "Chinese" },
+  { key: "ru", label: "Russian" }
+];
+
+const debrisOptions = [
+  { key: "unknown", label: "Unknown" },
+  { key: "no", label: "No debris" },
+  { key: "yes", label: "Debris to clear" }
+];
+
+const electricityOptions = [
+  { key: "unknown", label: "Unknown" },
+  { key: "none", label: "No damage" },
+  { key: "minor", label: "Minor disruption" },
+  { key: "moderate", label: "Partial outage" },
+  { key: "severe", label: "Major damage" },
+  { key: "destroyed", label: "Destroyed" }
+];
+
+const healthOptions = [
+  { key: "unknown", label: "Unknown" },
+  { key: "functional", label: "Functional" },
+  { key: "partial", label: "Partially functional" },
+  { key: "disrupted", label: "Largely disrupted" },
+  { key: "down", label: "Not functioning" }
+];
+
+const needsOptions = [
+  { key: "water_food", label: "Water / food" },
+  { key: "cash", label: "Cash assistance" },
+  { key: "healthcare", label: "Healthcare" },
+  { key: "shelter", label: "Shelter" },
+  { key: "livelihoods", label: "Livelihoods" },
+  { key: "wash", label: "WASH" },
+  { key: "basic_services", label: "Basic services" },
+  { key: "protection", label: "Protection" },
+  { key: "local_support", label: "Local support" }
+];
+
+const uiText = {
+  en: {
+    what: "1. What happened?",
+    whatSub: "Select the type of incident.",
+    affected: "Affected infrastructure",
+    language: "Language",
+    anonymous: "Your information is anonymous. No personal data is collected.",
+    photo: "2. Add a photo",
+    photoSub: "A clear photo helps others understand the situation.",
+    takePhoto: "Take a photo",
+    upload: "Upload",
+    tip: "Tip: photos are compressed before upload to save bandwidth.",
+    describe: "3. Describe the situation",
+    describeSub: "Provide short, clear details.",
+    title: "Short title",
+    details: "Description",
+    infraName: "Infrastructure name",
+    buildingId: "Building or asset ID",
+    severity: "Severity level",
+    more: "Community impact",
+    debris: "Debris near the site",
+    electricity: "Electricity condition",
+    health: "Health services",
+    urgentNeeds: "Most pressing needs",
+    where: "4. Where is it?",
+    whereSub: "Confirm the location of the incident.",
+    gps: "Use my location",
+    map: "Select on map",
+    landmark: "Landmark / location description",
+    area: "Area",
+    send: "Send report",
+    next: "Next",
+    offline: "Works offline. Will sync automatically.",
+    thankYou: "Thank you!",
+    savedOffline: "Saved offline",
+    sentText: "Your report has been sent. It helps protect communities.",
+    offlineText: "Your report will sync automatically when the connection returns.",
+    summary: "Report summary",
+    type: "Type",
+    status: "Severity",
+    location: "Location",
+    backHome: "Back home",
+    another: "Send another report"
+  },
+  fr: {
+    what: "1. Que s'est-il passe ?",
+    whatSub: "Selectionnez le type d'incident.",
+    affected: "Infrastructure touchee",
+    language: "Langue",
+    anonymous: "Vos informations sont anonymes. Aucune donnee personnelle n'est collectee.",
+    photo: "2. Ajouter une photo",
+    photoSub: "Une photo claire aide les equipes a comprendre la situation.",
+    takePhoto: "Prendre une photo",
+    upload: "Importer",
+    tip: "Astuce: les photos sont compressees avant l'envoi.",
+    describe: "3. Decrire la situation",
+    describeSub: "Ajoutez des details courts et clairs.",
+    title: "Titre court",
+    details: "Description",
+    infraName: "Nom de l'infrastructure",
+    buildingId: "ID batiment ou asset",
+    severity: "Niveau de gravite",
+    more: "Impact communautaire",
+    debris: "Debris sur le site",
+    electricity: "Etat de l'electricite",
+    health: "Services de sante",
+    urgentNeeds: "Besoins les plus urgents",
+    where: "4. Ou est-ce ?",
+    whereSub: "Confirmez le lieu de l'incident.",
+    gps: "Utiliser ma position",
+    map: "Selectionner sur la carte",
+    landmark: "Repere / description du lieu",
+    area: "Zone",
+    send: "Send report",
+    next: "Suivant",
+    offline: "Fonctionne hors ligne. Synchronisation automatique.",
+    thankYou: "Merci !",
+    savedOffline: "Enregistre hors ligne",
+    sentText: "Votre signalement a ete envoye. Il aide a proteger les communautes.",
+    offlineText: "Votre signalement sera synchronise quand la connexion revient.",
+    summary: "Resume du signalement",
+    type: "Type",
+    status: "Gravite",
+    location: "Localisation",
+    backHome: "Accueil",
+    another: "Envoyer un autre signalement"
+  },
+  es: {
+    what: "1. Que ocurrio?",
+    whatSub: "Seleccione el tipo de incidente.",
+    affected: "Infraestructura afectada",
+    language: "Idioma",
+    anonymous: "Su informacion es anonima. No se recopilan datos personales.",
+    photo: "2. Agregar una foto",
+    photoSub: "Una foto clara ayuda a entender la situacion.",
+    takePhoto: "Tomar foto",
+    upload: "Subir",
+    tip: "Consejo: las fotos se comprimen antes del envio.",
+    describe: "3. Describa la situacion",
+    describeSub: "Proporcione detalles breves y claros.",
+    title: "Titulo corto",
+    details: "Descripcion",
+    infraName: "Nombre de infraestructura",
+    buildingId: "ID de edificio o activo",
+    severity: "Nivel de gravedad",
+    more: "Impacto comunitario",
+    debris: "Escombros en el sitio",
+    electricity: "Estado electrico",
+    health: "Servicios de salud",
+    urgentNeeds: "Necesidades urgentes",
+    where: "4. Donde esta?",
+    whereSub: "Confirme la ubicacion del incidente.",
+    gps: "Usar mi ubicacion",
+    map: "Seleccionar en mapa",
+    landmark: "Referencia / descripcion del lugar",
+    area: "Area",
+    send: "Send report",
+    next: "Siguiente",
+    offline: "Funciona sin conexion. Se sincroniza automaticamente.",
+    thankYou: "Gracias!",
+    savedOffline: "Guardado sin conexion",
+    sentText: "Su reporte fue enviado. Ayuda a proteger comunidades.",
+    offlineText: "Su reporte se sincronizara cuando vuelva la conexion.",
+    summary: "Resumen del reporte",
+    type: "Tipo",
+    status: "Gravedad",
+    location: "Ubicacion",
+    backHome: "Inicio",
+    another: "Enviar otro reporte"
+  },
+  ar: {
+    what: "1. ماذا حدث؟",
+    whatSub: "اختر نوع الحادث.",
+    affected: "البنية التحتية المتضررة",
+    language: "اللغة",
+    anonymous: "معلوماتك مجهولة. لا يتم جمع بيانات شخصية.",
+    photo: "2. أضف صورة",
+    photoSub: "الصورة الواضحة تساعد فرق الاستجابة على فهم الوضع.",
+    takePhoto: "التقاط صورة",
+    upload: "رفع صورة",
+    tip: "نصيحة: يتم ضغط الصور قبل الإرسال لتقليل استهلاك البيانات.",
+    describe: "3. صف الوضع",
+    describeSub: "قدم تفاصيل قصيرة وواضحة.",
+    title: "عنوان قصير",
+    details: "الوصف",
+    infraName: "اسم البنية التحتية",
+    buildingId: "معرف المبنى أو الأصل",
+    severity: "مستوى الخطورة",
+    more: "الأثر على المجتمع",
+    debris: "الحطام في الموقع",
+    electricity: "حالة الكهرباء",
+    health: "الخدمات الصحية",
+    urgentNeeds: "الاحتياجات الأكثر إلحاحا",
+    where: "4. أين الموقع؟",
+    whereSub: "أكد موقع الحادث.",
+    gps: "استخدم موقعي",
+    map: "اختر على الخريطة",
+    landmark: "معلم / وصف الموقع",
+    area: "المنطقة",
+    send: "Send report",
+    next: "التالي",
+    offline: "يعمل دون اتصال. ستتم المزامنة تلقائيا.",
+    thankYou: "شكرا!",
+    savedOffline: "تم الحفظ دون اتصال",
+    sentText: "تم إرسال بلاغك. إنه يساعد على حماية المجتمعات.",
+    offlineText: "ستتم مزامنة بلاغك عند عودة الاتصال.",
+    summary: "ملخص البلاغ",
+    type: "النوع",
+    status: "الخطورة",
+    location: "الموقع",
+    backHome: "العودة للرئيسية",
+    another: "إرسال بلاغ آخر"
+  },
+  zh: {
+    what: "1. 发生了什么？",
+    whatSub: "选择事件类型。",
+    affected: "受影响的基础设施",
+    language: "语言",
+    anonymous: "您的信息是匿名的。不会收集个人数据。",
+    photo: "2. 添加照片",
+    photoSub: "清晰的照片有助于救援人员了解情况。",
+    takePhoto: "拍照",
+    upload: "上传",
+    tip: "提示：照片会在上传前压缩以节省流量。",
+    describe: "3. 描述情况",
+    describeSub: "请提供简短、清晰的细节。",
+    title: "简短标题",
+    details: "描述",
+    infraName: "基础设施名称",
+    buildingId: "建筑或资产编号",
+    severity: "严重程度",
+    more: "社区影响",
+    debris: "现场废墟",
+    electricity: "电力状况",
+    health: "卫生服务",
+    urgentNeeds: "最紧急需求",
+    where: "4. 在哪里？",
+    whereSub: "确认事件地点。",
+    gps: "使用我的位置",
+    map: "在地图上选择",
+    landmark: "地标 / 位置描述",
+    area: "区域",
+    send: "Send report",
+    next: "下一步",
+    offline: "可离线使用。将自动同步。",
+    thankYou: "谢谢！",
+    savedOffline: "已离线保存",
+    sentText: "您的报告已发送。它有助于保护社区。",
+    offlineText: "连接恢复后将同步您的报告。",
+    summary: "报告摘要",
+    type: "类型",
+    status: "严重程度",
+    location: "位置",
+    backHome: "返回首页",
+    another: "提交另一份报告"
+  },
+  ru: {
+    what: "1. Что произошло?",
+    whatSub: "Выберите тип происшествия.",
+    affected: "Пострадавшая инфраструктура",
+    language: "Язык",
+    anonymous: "Информация анонимна. Персональные данные не собираются.",
+    photo: "2. Добавьте фото",
+    photoSub: "Четкое фото помогает службам понять ситуацию.",
+    takePhoto: "Сделать фото",
+    upload: "Загрузить",
+    tip: "Совет: фотографии сжимаются перед отправкой.",
+    describe: "3. Опишите ситуацию",
+    describeSub: "Укажите краткие и понятные детали.",
+    title: "Краткий заголовок",
+    details: "Описание",
+    infraName: "Название инфраструктуры",
+    buildingId: "ID здания или объекта",
+    severity: "Уровень ущерба",
+    more: "Влияние на сообщество",
+    debris: "Завалы на месте",
+    electricity: "Состояние электроснабжения",
+    health: "Медицинские услуги",
+    urgentNeeds: "Самые срочные потребности",
+    where: "4. Где это?",
+    whereSub: "Подтвердите местоположение происшествия.",
+    gps: "Использовать мое местоположение",
+    map: "Выбрать на карте",
+    landmark: "Ориентир / описание места",
+    area: "Район",
+    send: "Send report",
+    next: "Далее",
+    offline: "Работает офлайн. Синхронизация будет автоматической.",
+    thankYou: "Спасибо!",
+    savedOffline: "Сохранено офлайн",
+    sentText: "Ваш отчет отправлен. Он помогает защищать сообщества.",
+    offlineText: "Ваш отчет синхронизируется при восстановлении связи.",
+    summary: "Сводка отчета",
+    type: "Тип",
+    status: "Ущерб",
+    location: "Местоположение",
+    backHome: "На главную",
+    another: "Отправить еще один отчет"
+  }
+};
+
+function tr(language, key) {
+  return (uiText[language] || uiText.en)[key] || uiText.en[key] || key;
+}
 
 export default function ReportScreen({ navigation }) {
   const { token, isAuthenticated } = useAuth();
@@ -69,6 +394,7 @@ export default function ReportScreen({ navigation }) {
   function validate(targetStep = step) {
     const nextErrors = {};
     if (targetStep >= 1 && !form.crisisType) nextErrors.crisisType = "Select the incident type.";
+    if (targetStep >= 2 && !form.image) nextErrors.image = "Add a photo of the damaged infrastructure.";
     if (targetStep >= 3) {
       if (!form.title.trim() || form.title.trim().length < 3) nextErrors.title = "Add a short title.";
       if (!form.description.trim() || form.description.trim().length < 10) nextErrors.description = "Add at least 10 characters.";
@@ -107,6 +433,30 @@ export default function ReportScreen({ navigation }) {
     if (!result.canceled) update("image", result.assets[0]);
   }
 
+  function toggleNeed(key) {
+    setForm((current) => ({
+      ...current,
+      urgentNeeds: current.urgentNeeds.includes(key) ? current.urgentNeeds.filter((item) => item !== key) : [...current.urgentNeeds, key]
+    }));
+  }
+
+  function composeDescription(payload) {
+    const selectedNeeds = payload.urgentNeeds.map((key) => labelFor(needsOptions, key)).join(", ") || "None selected";
+    const communityDetails = [
+      `Infrastructure: ${payload.infrastructureName || "Not specified"}`,
+      `Building/asset ID: ${payload.assetId || "Not specified"}`,
+      `Debris: ${labelFor(debrisOptions, payload.debris)}`,
+      `Electricity: ${labelFor(electricityOptions, payload.electricityStatus)}`,
+      `Health services: ${labelFor(healthOptions, payload.healthServices)}`,
+      `Urgent needs: ${selectedNeeds}`,
+      `Access blocked: ${payload.accessBlocked ? "Yes" : "No"}`,
+      `Services disrupted: ${payload.servicesDisrupted ? "Yes" : "No"}`,
+      `Livelihoods affected: ${payload.livelihoodsAffected ? "Yes" : "No"}`,
+      `People at risk: ${payload.peopleAtRisk ? "Yes" : "No"}`
+    ].join("\n");
+    return `${payload.description.trim()}\n\nUNDP modular fields:\n${communityDetails}`;
+  }
+
   async function useCurrentLocation() {
     setApiError("");
     const permission = await Location.requestForegroundPermissionsAsync();
@@ -122,17 +472,25 @@ export default function ReportScreen({ navigation }) {
   function buildFormData(payload) {
     const body = new FormData();
     body.append("title", payload.title.trim());
-    body.append("description", payload.description.trim());
+    body.append("description", composeDescription(payload));
     body.append("category", payload.category);
     body.append("infrastructureType", payload.category);
+    body.append("infrastructureName", payload.infrastructureName.trim());
+    body.append("assetId", payload.assetId.trim());
     body.append("crisisType", payload.crisisType);
     body.append("damageLevel", payload.damageLevel);
-    body.append("language", "en");
+    body.append("language", payload.language);
+    body.append("debris", payload.debris);
+    body.append("locationDescription", payload.locationDescription.trim());
+    body.append("accessBlocked", String(payload.accessBlocked));
+    body.append("servicesDisrupted", String(payload.servicesDisrupted));
+    body.append("livelihoodsAffected", String(payload.livelihoodsAffected));
+    body.append("peopleAtRisk", String(payload.peopleAtRisk));
     body.append("province", payload.province);
     body.append("commune", payload.commune);
     body.append("lat", String(payload.lat));
     body.append("lng", String(payload.lng));
-    body.append("address", `${payload.commune}, ${payload.province}`);
+    body.append("address", payload.locationDescription.trim() || `${payload.commune}, ${payload.province}`);
     if (payload.image) {
       body.append("images", {
         uri: payload.image.uri,
@@ -184,16 +542,16 @@ export default function ReportScreen({ navigation }) {
         <View style={styles.successIcon}>
           <Ionicons name={success.mode === "offline" ? "cloud-offline-outline" : "checkmark"} size={56} color={colors.primary} />
         </View>
-        <Text style={styles.successTitle}>{success.mode === "offline" ? "Saved offline" : "Thank you!"}</Text>
+        <Text style={styles.successTitle}>{success.mode === "offline" ? tr(success.payload.language, "savedOffline") : tr(success.payload.language, "thankYou")}</Text>
         <Text style={styles.successText}>
-          {success.mode === "offline" ? "Your report will sync automatically when the connection returns." : "Your report has been sent. It helps protect communities."}
+          {success.mode === "offline" ? tr(success.payload.language, "offlineText") : tr(success.payload.language, "sentText")}
         </Text>
         <View style={styles.summary}>
-          <Text style={styles.summaryTitle}>Report summary</Text>
-          <SummaryRow label="Type" value={labelFor(incidents, success.payload.crisisType)} />
-          <SummaryRow label="Severity" value={labelFor(severity, success.payload.damageLevel)} tone={severity.find((item) => item.key === success.payload.damageLevel)?.color} />
-          <SummaryRow label="Location" value={`${Number(success.payload.lat).toFixed(4)}, ${Number(success.payload.lng).toFixed(4)}`} />
-          <SummaryRow label="Area" value={`${success.payload.commune}, ${success.payload.province}`} />
+          <Text style={styles.summaryTitle}>{tr(success.payload.language, "summary")}</Text>
+          <SummaryRow label={tr(success.payload.language, "type")} value={labelFor(incidents, success.payload.crisisType)} />
+          <SummaryRow label={tr(success.payload.language, "status")} value={labelFor(severity, success.payload.damageLevel)} tone={severity.find((item) => item.key === success.payload.damageLevel)?.color} />
+          <SummaryRow label={tr(success.payload.language, "location")} value={`${Number(success.payload.lat).toFixed(4)}, ${Number(success.payload.lng).toFixed(4)}`} />
+          <SummaryRow label={tr(success.payload.language, "area")} value={`${success.payload.commune}, ${success.payload.province}`} />
         </View>
         {offlineCount > 0 ? (
           <Pressable style={styles.secondaryWide} onPress={syncQueue} disabled={submitting}>
@@ -202,7 +560,7 @@ export default function ReportScreen({ navigation }) {
           </Pressable>
         ) : null}
         <Pressable style={styles.linkButton} onPress={() => navigation.goBack?.()}>
-          <Text style={styles.linkText}>Back home</Text>
+          <Text style={styles.linkText}>{tr(success.payload.language, "backHome")}</Text>
         </Pressable>
         <Pressable
           style={styles.linkButton}
@@ -211,7 +569,7 @@ export default function ReportScreen({ navigation }) {
             setStep(1);
           }}
         >
-          <Text style={styles.linkText}>Send another report</Text>
+          <Text style={styles.linkText}>{tr(success.payload.language, "another")}</Text>
         </Pressable>
       </SafeAreaView>
     );
@@ -242,13 +600,19 @@ export default function ReportScreen({ navigation }) {
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {step === 1 ? (
           <View>
-            <ScreenTitle title="1. What happened?" subtitle="Select the type of incident." />
+            <ScreenTitle title={tr(form.language, "what")} subtitle={tr(form.language, "whatSub")} />
+            <Text style={styles.smallLabel}>{tr(form.language, "language")}</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+              {languages.map((item) => (
+                <Chip key={item.key} label={item.label} active={form.language === item.key} onPress={() => update("language", item.key)} />
+              ))}
+            </ScrollView>
             <View style={styles.incidentGrid}>
               {incidents.map((item) => (
                 <IncidentCard key={item.key} item={item} active={form.crisisType === item.key} onPress={() => update("crisisType", item.key)} />
               ))}
             </View>
-            <Text style={styles.smallLabel}>Affected infrastructure</Text>
+            <Text style={styles.smallLabel}>{tr(form.language, "affected")}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
               {categories.map((item) => (
                 <Chip key={item.key} label={item.label} icon={item.icon} active={form.category === item.key} color={item.color} onPress={() => update("category", item.key)} />
@@ -256,15 +620,15 @@ export default function ReportScreen({ navigation }) {
             </ScrollView>
             <View style={styles.infoBox}>
               <Ionicons name="shield-checkmark-outline" size={24} color="#071a4f" />
-              <Text style={styles.infoText}>Your information is anonymous. No personal data is collected.</Text>
+              <Text style={styles.infoText}>{tr(form.language, "anonymous")}</Text>
             </View>
-            <PrimaryButton title="Next" icon="arrow-forward" onPress={nextStep} />
+            <PrimaryButton title={tr(form.language, "next")} icon="arrow-forward" onPress={nextStep} />
           </View>
         ) : null}
 
         {step === 2 ? (
           <View>
-            <ScreenTitle title="2. Add a photo" subtitle="A clear photo helps others understand the situation." />
+            <ScreenTitle title={tr(form.language, "photo")} subtitle={tr(form.language, "photoSub")} />
             <Pressable style={styles.photoBox} onPress={() => choosePhoto("camera")}>
               {form.image ? (
                 <Image source={{ uri: form.image.uri }} style={styles.photoPreview} resizeMode="cover" />
@@ -273,31 +637,32 @@ export default function ReportScreen({ navigation }) {
                   <View style={styles.cameraCircle}>
                     <Ionicons name="camera-outline" size={42} color={colors.primary} />
                   </View>
-                  <Text style={styles.photoTitle}>Take a photo</Text>
+                  <Text style={styles.photoTitle}>{tr(form.language, "takePhoto")}</Text>
                   <Text style={styles.photoHint}>or upload from gallery</Text>
                 </View>
               )}
             </Pressable>
+            {errors.image ? <Text style={styles.fieldError}>{errors.image}</Text> : null}
             <View style={styles.twoButtons}>
-              <SecondaryButton title="Take photo" icon="camera-outline" onPress={() => choosePhoto("camera")} grow />
-              <SecondaryButton title="Upload" icon="image-outline" onPress={() => choosePhoto("library")} grow />
+              <SecondaryButton title={tr(form.language, "takePhoto")} icon="camera-outline" onPress={() => choosePhoto("camera")} grow />
+              <SecondaryButton title={tr(form.language, "upload")} icon="image-outline" onPress={() => choosePhoto("library")} grow />
             </View>
             <View style={styles.tipBox}>
               <Ionicons name="bulb-outline" size={24} color={colors.primary} />
-              <Text style={styles.tipText}>Tip: photos are compressed before upload to save bandwidth.</Text>
+              <Text style={styles.tipText}>{tr(form.language, "tip")}</Text>
             </View>
-            <PrimaryButton title="Next" icon="arrow-forward" onPress={nextStep} />
+            <PrimaryButton title={tr(form.language, "next")} icon="arrow-forward" onPress={nextStep} />
           </View>
         ) : null}
 
         {step === 3 ? (
           <View>
-            <ScreenTitle title="3. Describe the situation" subtitle="Provide short, clear details." />
-            <FieldBlock label="Short title" error={errors.title}>
+            <ScreenTitle title={tr(form.language, "describe")} subtitle={tr(form.language, "describeSub")} />
+            <FieldBlock label={tr(form.language, "title")} error={errors.title}>
               <TextInput value={form.title} onChangeText={(value) => update("title", value.slice(0, 80))} placeholder="E.g. Bridge partially damaged" placeholderTextColor="#94a3b8" style={styles.input} />
               <Text style={styles.counter}>{form.title.length}/80</Text>
             </FieldBlock>
-            <FieldBlock label="Description" error={errors.description}>
+            <FieldBlock label={tr(form.language, "details")} error={errors.description}>
               <TextInput
                 value={form.description}
                 onChangeText={(value) => update("description", value.slice(0, 500))}
@@ -308,29 +673,79 @@ export default function ReportScreen({ navigation }) {
               />
               <Text style={styles.counter}>{form.description.length}/500</Text>
             </FieldBlock>
-            <Text style={styles.smallLabel}>Severity level</Text>
+            <FieldBlock label={tr(form.language, "infraName")}>
+              <TextInput value={form.infrastructureName} onChangeText={(value) => update("infrastructureName", value.slice(0, 120))} placeholder="E.g. Central market bridge" placeholderTextColor="#94a3b8" style={styles.input} />
+            </FieldBlock>
+            <FieldBlock label={tr(form.language, "buildingId")}>
+              <TextInput value={form.assetId} onChangeText={(value) => update("assetId", value.slice(0, 80))} placeholder="Optional building footprint or local ID" placeholderTextColor="#94a3b8" style={styles.input} />
+            </FieldBlock>
+            <Text style={styles.smallLabel}>{tr(form.language, "severity")}</Text>
             <View style={styles.severityRow}>
               {severity.map((item) => (
                 <SeverityButton key={item.key} item={item} active={form.damageLevel === item.key} onPress={() => update("damageLevel", item.key)} />
               ))}
             </View>
-            <PrimaryButton title="Next" icon="arrow-forward" onPress={nextStep} />
+            <Text style={styles.smallLabel}>{tr(form.language, "more")}</Text>
+            <Text style={styles.smallLabel}>{tr(form.language, "debris")}</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+              {debrisOptions.map((item) => (
+                <Chip key={item.key} label={item.label} active={form.debris === item.key} onPress={() => update("debris", item.key)} />
+              ))}
+            </ScrollView>
+            <Text style={styles.smallLabel}>{tr(form.language, "electricity")}</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+              {electricityOptions.map((item) => (
+                <Chip key={item.key} label={item.label} active={form.electricityStatus === item.key} onPress={() => update("electricityStatus", item.key)} />
+              ))}
+            </ScrollView>
+            <Text style={styles.smallLabel}>{tr(form.language, "health")}</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+              {healthOptions.map((item) => (
+                <Chip key={item.key} label={item.label} active={form.healthServices === item.key} onPress={() => update("healthServices", item.key)} />
+              ))}
+            </ScrollView>
+            <Text style={styles.smallLabel}>{tr(form.language, "urgentNeeds")}</Text>
+            <View style={styles.needGrid}>
+              {needsOptions.map((item) => (
+                <NeedChip key={item.key} label={item.label} active={form.urgentNeeds.includes(item.key)} onPress={() => toggleNeed(item.key)} />
+              ))}
+            </View>
+            <View style={styles.flagGrid}>
+              <ToggleRow label="Access blocked" value={form.accessBlocked} onPress={() => update("accessBlocked", !form.accessBlocked)} />
+              <ToggleRow label="Services disrupted" value={form.servicesDisrupted} onPress={() => update("servicesDisrupted", !form.servicesDisrupted)} />
+              <ToggleRow label="Livelihoods affected" value={form.livelihoodsAffected} onPress={() => update("livelihoodsAffected", !form.livelihoodsAffected)} />
+              <ToggleRow label="People at risk" value={form.peopleAtRisk} onPress={() => update("peopleAtRisk", !form.peopleAtRisk)} />
+            </View>
+            <PrimaryButton title={tr(form.language, "next")} icon="arrow-forward" onPress={nextStep} />
           </View>
         ) : null}
 
         {step === 4 ? (
           <View>
-            <ScreenTitle title="4. Where is it?" subtitle="Confirm the location of the incident." />
-            <SecondaryButton title="Use my location" icon="locate-outline" onPress={useCurrentLocation} strong />
-            <SecondaryButton title="Select on map" icon="map-outline" onPress={() => setApiError("Map selection will be available from the web dashboard. GPS is ready now.")} />
+            <ScreenTitle title={tr(form.language, "where")} subtitle={tr(form.language, "whereSub")} />
+            <SecondaryButton title={tr(form.language, "gps")} icon="locate-outline" onPress={useCurrentLocation} strong />
+            <SecondaryButton title={tr(form.language, "map")} icon="map-outline" onPress={() => setApiError("Building footprint selection is prepared for the web map; GPS and landmark are ready now.")} />
             <View style={styles.mapPreview}>
               <View style={styles.mapLineA} />
               <View style={styles.mapLineB} />
               <View style={styles.mapLineC} />
+              <View style={styles.footprintA} />
+              <View style={styles.footprintB} />
+              <View style={styles.footprintC} />
               <View style={styles.mapPin}>
                 <Ionicons name="location" size={30} color={colors.primary} />
               </View>
             </View>
+            <FieldBlock label={tr(form.language, "landmark")}>
+              <TextInput
+                value={form.locationDescription}
+                onChangeText={(value) => update("locationDescription", value.slice(0, 260))}
+                placeholder="E.g. school near the central market"
+                placeholderTextColor="#94a3b8"
+                multiline
+                style={[styles.input, styles.landmarkInput]}
+              />
+            </FieldBlock>
             <View style={styles.locationCard}>
               <View>
                 <Text style={styles.coordLabel}>Coordinates</Text>
@@ -338,7 +753,7 @@ export default function ReportScreen({ navigation }) {
               </View>
               <Text style={styles.editText}>Ready</Text>
             </View>
-            <Text style={styles.smallLabel}>Area</Text>
+            <Text style={styles.smallLabel}>{tr(form.language, "area")}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
               {provinceNames.slice(0, 10).map((province) => (
                 <Chip key={province} label={province} active={form.province === province} onPress={() => setForm((current) => ({ ...current, province, commune: provinces[province]?.[0] || "" }))} />
@@ -350,8 +765,8 @@ export default function ReportScreen({ navigation }) {
               ))}
             </ScrollView>
             {errors.location ? <Text style={styles.fieldError}>{errors.location}</Text> : null}
-            <PrimaryButton title={submitting ? "Sending..." : "Send report"} icon="paper-plane-outline" onPress={submit} disabled={submitting} />
-            <Text style={styles.offlineNote}>Works offline. Will sync automatically.</Text>
+            <PrimaryButton title={submitting ? "Sending..." : tr(form.language, "send")} icon="paper-plane-outline" onPress={submit} disabled={submitting} />
+            <Text style={styles.offlineNote}>{tr(form.language, "offline")}</Text>
           </View>
         ) : null}
       </ScrollView>
@@ -390,6 +805,23 @@ function SeverityButton({ item, active, onPress }) {
   return (
     <Pressable onPress={onPress} style={({ pressed }) => [styles.severity, { borderColor: active ? item.color : `${item.color}55`, backgroundColor: active ? `${item.color}16` : "#fff" }, pressed && styles.pressed]}>
       <Text style={[styles.severityText, { color: item.color }]}>{item.label}</Text>
+    </Pressable>
+  );
+}
+
+function NeedChip({ label, active, onPress }) {
+  return (
+    <Pressable onPress={onPress} style={({ pressed }) => [styles.needChip, active && styles.needChipActive, pressed && styles.pressed]}>
+      <Text style={[styles.needText, active && styles.needTextActive]}>{label}</Text>
+    </Pressable>
+  );
+}
+
+function ToggleRow({ label, value, onPress }) {
+  return (
+    <Pressable onPress={onPress} style={({ pressed }) => [styles.toggleRow, value && styles.toggleRowActive, pressed && styles.pressed]}>
+      <Ionicons name={value ? "checkmark-circle" : "ellipse-outline"} size={22} color={value ? colors.primary : colors.muted} />
+      <Text style={[styles.toggleText, value && styles.toggleTextActive]}>{label}</Text>
     </Pressable>
   );
 }
@@ -502,7 +934,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     height: 112,
     justifyContent: "center",
-    width: "48%"
+    width: "47%"
   },
   incidentActive: {
     backgroundColor: "#f0fdf4",
@@ -673,6 +1105,58 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "900"
   },
+  needGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 16
+  },
+  needChip: {
+    backgroundColor: "#fff",
+    borderColor: colors.border,
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 9
+  },
+  needChipActive: {
+    backgroundColor: "#ecfdf5",
+    borderColor: colors.primary
+  },
+  needText: {
+    color: "#334155",
+    fontSize: 12,
+    fontWeight: "900"
+  },
+  needTextActive: {
+    color: colors.primaryDark
+  },
+  flagGrid: {
+    gap: 9,
+    marginBottom: 22
+  },
+  toggleRow: {
+    alignItems: "center",
+    backgroundColor: "#fff",
+    borderColor: colors.border,
+    borderRadius: 14,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: 9,
+    padding: 13
+  },
+  toggleRowActive: {
+    backgroundColor: "#f0fdf4",
+    borderColor: colors.primary
+  },
+  toggleText: {
+    color: "#334155",
+    fontSize: 13,
+    fontWeight: "900"
+  },
+  toggleTextActive: {
+    color: colors.primaryDark
+  },
   mapPreview: {
     backgroundColor: "#edf6f6",
     borderRadius: 16,
@@ -711,6 +1195,49 @@ const styles = StyleSheet.create({
     left: "46%",
     position: "absolute",
     top: "40%"
+  },
+  footprintA: {
+    backgroundColor: "#fff",
+    borderColor: "#9ac7c8",
+    borderRadius: 4,
+    borderWidth: 1,
+    height: 34,
+    left: 42,
+    opacity: 0.85,
+    position: "absolute",
+    top: 34,
+    transform: [{ rotate: "8deg" }],
+    width: 58
+  },
+  footprintB: {
+    backgroundColor: "#fff",
+    borderColor: "#9ac7c8",
+    borderRadius: 4,
+    borderWidth: 1,
+    height: 44,
+    opacity: 0.85,
+    position: "absolute",
+    right: 52,
+    top: 78,
+    transform: [{ rotate: "-12deg" }],
+    width: 72
+  },
+  footprintC: {
+    backgroundColor: "#dcfce7",
+    borderColor: colors.primary,
+    borderRadius: 4,
+    borderWidth: 2,
+    height: 42,
+    left: "42%",
+    opacity: 0.95,
+    position: "absolute",
+    top: "42%",
+    transform: [{ rotate: "15deg" }],
+    width: 62
+  },
+  landmarkInput: {
+    minHeight: 82,
+    textAlignVertical: "top"
   },
   locationCard: {
     alignItems: "center",
