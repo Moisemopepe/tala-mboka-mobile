@@ -1,18 +1,14 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
-import { useEffect, useMemo, useState } from "react";
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import BrandHeader from "../components/BrandHeader";
-import Button from "../components/Button";
-import Card from "../components/Card";
-import Field from "../components/Field";
-import Screen from "../components/Screen";
+import { useEffect, useState } from "react";
+import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../services/api";
 import { listOfflineReports, saveOfflineReport, syncOfflineReports } from "../services/offlineQueue";
 import { colors } from "../theme";
-import { categories, categoryByKey, crisisTypes, damageLevels } from "../utils/categories";
+import { categories } from "../utils/categories";
 import { defaultLocation, provinces } from "../utils/locations";
 
 const initialForm = {
@@ -28,15 +24,30 @@ const initialForm = {
   image: null
 };
 
+const incidents = [
+  { key: "flood", label: "Flood", icon: "water-outline", color: "#60a5fa" },
+  { key: "earthquake", label: "Earthquake", icon: "pulse-outline", color: "#ef4444" },
+  { key: "fire", label: "Fire", icon: "flame-outline", color: "#f97316" },
+  { key: "conflict", label: "Conflict", icon: "shield-outline", color: "#8b5cf6" },
+  { key: "explosion", label: "Explosion", icon: "warning-outline", color: "#b45309" },
+  { key: "other", label: "Other", icon: "ellipsis-horizontal-outline", color: "#64748b" }
+];
+
+const severity = [
+  { key: "minimal", label: "Low", color: colors.primary },
+  { key: "partial", label: "Medium", color: colors.warning },
+  { key: "complete", label: "High", color: colors.danger }
+];
+
 export default function ReportScreen({ navigation }) {
   const { token, isAuthenticated } = useAuth();
+  const [step, setStep] = useState(1);
   const [form, setForm] = useState(initialForm);
   const [errors, setErrors] = useState({});
   const [apiError, setApiError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [success, setSuccess] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [offlineCount, setOfflineCount] = useState(0);
-  const selectedCategory = useMemo(() => categoryByKey(form.category), [form.category]);
   const provinceNames = Object.keys(provinces);
   const communeOptions = provinces[form.province] || [];
 
@@ -55,20 +66,33 @@ export default function ReportScreen({ navigation }) {
     setApiError("");
   }
 
-  function validate(payload = form) {
+  function validate(targetStep = step) {
     const nextErrors = {};
-    if (!payload.category) nextErrors.category = "Choose infrastructure.";
-    if (!payload.crisisType) nextErrors.crisisType = "Choose crisis type.";
-    if (!payload.damageLevel) nextErrors.damageLevel = "Choose damage level.";
-    if (!payload.title.trim() || payload.title.trim().length < 3) nextErrors.title = "Add a short title.";
-    if (!payload.description.trim() || payload.description.trim().length < 10) nextErrors.description = "Add at least 10 characters.";
-    if (!payload.lat || !payload.lng) nextErrors.location = "GPS location is required.";
+    if (targetStep >= 1 && !form.crisisType) nextErrors.crisisType = "Select the incident type.";
+    if (targetStep >= 3) {
+      if (!form.title.trim() || form.title.trim().length < 3) nextErrors.title = "Add a short title.";
+      if (!form.description.trim() || form.description.trim().length < 10) nextErrors.description = "Add at least 10 characters.";
+    }
+    if (targetStep >= 4 && (!form.lat || !form.lng)) nextErrors.location = "Confirm a location.";
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
   }
 
+  function nextStep() {
+    if (!validate(step)) return;
+    setStep((current) => Math.min(current + 1, 4));
+  }
+
+  function previousStep() {
+    if (step === 1) {
+      navigation.goBack?.();
+      return;
+    }
+    setStep((current) => Math.max(current - 1, 1));
+  }
+
   async function choosePhoto(source) {
-    const options = { mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.45 };
+    const options = { mediaTypes: ["images"], quality: 0.42 };
     let result;
     if (source === "camera") {
       const permission = await ImagePicker.requestCameraPermissionsAsync();
@@ -124,17 +148,18 @@ export default function ReportScreen({ navigation }) {
   }
 
   async function submit() {
-    if (submitting || !validate()) return;
+    if (submitting || !validate(4)) return;
     setSubmitting(true);
     setApiError("");
+    const payload = { ...form };
     try {
-      await sendPayload(form);
-      setSuccess("sent");
+      await sendPayload(payload);
+      setSuccess({ mode: "sent", payload });
       setForm(initialForm);
     } catch {
-      await saveOfflineReport(form);
+      await saveOfflineReport(payload);
       await refreshOfflineCount();
-      setSuccess("offline");
+      setSuccess({ mode: "offline", payload });
       setForm(initialForm);
     } finally {
       setSubmitting(false);
@@ -144,9 +169,8 @@ export default function ReportScreen({ navigation }) {
   async function syncQueue() {
     setSubmitting(true);
     try {
-      const result = await syncOfflineReports(sendPayload);
+      await syncOfflineReports(sendPayload);
       await refreshOfflineCount();
-      setSuccess(`${result.synced.length} synced, ${result.failed.length} pending`);
     } catch (error) {
       setApiError(error.message);
     } finally {
@@ -154,102 +178,206 @@ export default function ReportScreen({ navigation }) {
     }
   }
 
-  return (
-    <Screen>
-      <BrandHeader eyebrow="Field report" title="Send report" subtitle="Capture now. If the network fails, the report stays offline and syncs later." />
+  if (success) {
+    return (
+      <SafeAreaView style={styles.successScreen}>
+        <View style={styles.successIcon}>
+          <Ionicons name={success.mode === "offline" ? "cloud-offline-outline" : "checkmark"} size={56} color={colors.primary} />
+        </View>
+        <Text style={styles.successTitle}>{success.mode === "offline" ? "Saved offline" : "Thank you!"}</Text>
+        <Text style={styles.successText}>
+          {success.mode === "offline" ? "Your report will sync automatically when the connection returns." : "Your report has been sent. It helps protect communities."}
+        </Text>
+        <View style={styles.summary}>
+          <Text style={styles.summaryTitle}>Report summary</Text>
+          <SummaryRow label="Type" value={labelFor(incidents, success.payload.crisisType)} />
+          <SummaryRow label="Severity" value={labelFor(severity, success.payload.damageLevel)} tone={severity.find((item) => item.key === success.payload.damageLevel)?.color} />
+          <SummaryRow label="Location" value={`${Number(success.payload.lat).toFixed(4)}, ${Number(success.payload.lng).toFixed(4)}`} />
+          <SummaryRow label="Area" value={`${success.payload.commune}, ${success.payload.province}`} />
+        </View>
+        {offlineCount > 0 ? (
+          <Pressable style={styles.secondaryWide} onPress={syncQueue} disabled={submitting}>
+            <Ionicons name="sync-outline" size={20} color="#071a4f" />
+            <Text style={styles.secondaryText}>Sync pending reports</Text>
+          </Pressable>
+        ) : null}
+        <Pressable style={styles.linkButton} onPress={() => navigation.goBack?.()}>
+          <Text style={styles.linkText}>Back home</Text>
+        </Pressable>
+        <Pressable
+          style={styles.linkButton}
+          onPress={() => {
+            setSuccess(null);
+            setStep(1);
+          }}
+        >
+          <Text style={styles.linkText}>Send another report</Text>
+        </Pressable>
+      </SafeAreaView>
+    );
+  }
 
-      {success ? <Text style={success === "offline" ? styles.warning : styles.notice}>{success === "sent" ? "Report sent to the web platform." : success === "offline" ? "No network. Report saved offline." : success}</Text> : null}
+  return (
+    <SafeAreaView style={styles.screen}>
+      <View style={styles.topbar}>
+        <Pressable onPress={previousStep} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={24} color="#071a4f" />
+        </Pressable>
+        <View style={styles.progress}>
+          {[1, 2, 3, 4].map((item) => (
+            <View key={item} style={[styles.progressBar, item <= step && styles.progressActive]} />
+          ))}
+        </View>
+        <View style={styles.backButton} />
+      </View>
+
       {apiError ? <Text style={styles.error}>{apiError}</Text> : null}
       {offlineCount > 0 ? (
-        <Card style={styles.offlineCard}>
+        <Pressable onPress={syncQueue} style={styles.offlinePill} disabled={submitting}>
+          <Ionicons name="cloud-offline-outline" size={16} color={colors.warning} />
           <Text style={styles.offlineText}>{offlineCount} offline report(s) waiting</Text>
-          <Button title="Sync now" variant="secondary" onPress={syncQueue} disabled={submitting} />
-        </Card>
+        </Pressable>
       ) : null}
 
-      <Card style={styles.stack}>
-        <Text style={styles.sectionTitle}>1. Crisis type + Damage</Text>
-        <View style={styles.row}>
-          <SelectChips items={crisisTypes} value={form.crisisType} onChange={(value) => update("crisisType", value)} />
-        </View>
-        <SelectChips items={damageLevels} value={form.damageLevel} onChange={(value) => update("damageLevel", value)} />
-      </Card>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        {step === 1 ? (
+          <View>
+            <ScreenTitle title="1. What happened?" subtitle="Select the type of incident." />
+            <View style={styles.incidentGrid}>
+              {incidents.map((item) => (
+                <IncidentCard key={item.key} item={item} active={form.crisisType === item.key} onPress={() => update("crisisType", item.key)} />
+              ))}
+            </View>
+            <Text style={styles.smallLabel}>Affected infrastructure</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+              {categories.map((item) => (
+                <Chip key={item.key} label={item.label} icon={item.icon} active={form.category === item.key} color={item.color} onPress={() => update("category", item.key)} />
+              ))}
+            </ScrollView>
+            <View style={styles.infoBox}>
+              <Ionicons name="shield-checkmark-outline" size={24} color="#071a4f" />
+              <Text style={styles.infoText}>Your information is anonymous. No personal data is collected.</Text>
+            </View>
+            <PrimaryButton title="Next" icon="arrow-forward" onPress={nextStep} />
+          </View>
+        ) : null}
 
-      <Card style={styles.stack}>
-        <Text style={styles.sectionTitle}>Infrastructure</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-          {categories.map((category) => (
-            <Chip key={category.key} icon={category.icon} label={category.label} active={form.category === category.key} onPress={() => update("category", category.key)} color={category.color} />
-          ))}
-        </ScrollView>
-        <Text style={styles.muted}>Selected: {selectedCategory.label}</Text>
-      </Card>
-
-      <Card style={styles.stack}>
-        <Text style={styles.sectionTitle}>2. Photo</Text>
-        {form.image ? (
-          <View style={styles.previewWrap}>
-            <Image source={{ uri: form.image.uri }} style={styles.preview} resizeMode="cover" />
-            <Pressable style={styles.removeImage} onPress={() => update("image", null)}>
-              <Ionicons name="close" size={18} color="#fff" />
+        {step === 2 ? (
+          <View>
+            <ScreenTitle title="2. Add a photo" subtitle="A clear photo helps others understand the situation." />
+            <Pressable style={styles.photoBox} onPress={() => choosePhoto("camera")}>
+              {form.image ? (
+                <Image source={{ uri: form.image.uri }} style={styles.photoPreview} resizeMode="cover" />
+              ) : (
+                <View style={styles.photoEmpty}>
+                  <View style={styles.cameraCircle}>
+                    <Ionicons name="camera-outline" size={42} color={colors.primary} />
+                  </View>
+                  <Text style={styles.photoTitle}>Take a photo</Text>
+                  <Text style={styles.photoHint}>or upload from gallery</Text>
+                </View>
+              )}
             </Pressable>
+            <View style={styles.twoButtons}>
+              <SecondaryButton title="Take photo" icon="camera-outline" onPress={() => choosePhoto("camera")} grow />
+              <SecondaryButton title="Upload" icon="image-outline" onPress={() => choosePhoto("library")} grow />
+            </View>
+            <View style={styles.tipBox}>
+              <Ionicons name="bulb-outline" size={24} color={colors.primary} />
+              <Text style={styles.tipText}>Tip: photos are compressed before upload to save bandwidth.</Text>
+            </View>
+            <PrimaryButton title="Next" icon="arrow-forward" onPress={nextStep} />
           </View>
-        ) : (
-          <View style={styles.emptyImage}>
-            <Ionicons name="camera-outline" size={34} color={colors.muted} />
-            <Text style={styles.muted}>Compressed before upload to save bandwidth.</Text>
+        ) : null}
+
+        {step === 3 ? (
+          <View>
+            <ScreenTitle title="3. Describe the situation" subtitle="Provide short, clear details." />
+            <FieldBlock label="Short title" error={errors.title}>
+              <TextInput value={form.title} onChangeText={(value) => update("title", value.slice(0, 80))} placeholder="E.g. Bridge partially damaged" placeholderTextColor="#94a3b8" style={styles.input} />
+              <Text style={styles.counter}>{form.title.length}/80</Text>
+            </FieldBlock>
+            <FieldBlock label="Description" error={errors.description}>
+              <TextInput
+                value={form.description}
+                onChangeText={(value) => update("description", value.slice(0, 500))}
+                placeholder="What happened? What is damaged? Any immediate risk?"
+                placeholderTextColor="#94a3b8"
+                multiline
+                style={[styles.input, styles.textarea]}
+              />
+              <Text style={styles.counter}>{form.description.length}/500</Text>
+            </FieldBlock>
+            <Text style={styles.smallLabel}>Severity level</Text>
+            <View style={styles.severityRow}>
+              {severity.map((item) => (
+                <SeverityButton key={item.key} item={item} active={form.damageLevel === item.key} onPress={() => update("damageLevel", item.key)} />
+              ))}
+            </View>
+            <PrimaryButton title="Next" icon="arrow-forward" onPress={nextStep} />
           </View>
-        )}
-        <View style={styles.row}>
-          <Button title="Take photo" variant="secondary" onPress={() => choosePhoto("camera")} style={styles.rowButton} />
-          <Button title="Upload" variant="secondary" onPress={() => choosePhoto("library")} style={styles.rowButton} />
-        </View>
-      </Card>
+        ) : null}
 
-      <Card style={styles.stack}>
-        <Text style={styles.sectionTitle}>3. Description</Text>
-        <Field label="Short title" icon={selectedCategory.icon} placeholder="Bridge partially damaged" value={form.title} onChangeText={(value) => update("title", value)} error={errors.title} />
-        <Field label="Description" icon="document-text-outline" placeholder="What happened? What is damaged? Any urgent risk?" multiline value={form.description} onChangeText={(value) => update("description", value)} error={errors.description} />
-      </Card>
-
-      <Card style={styles.stack}>
-        <Text style={styles.sectionTitle}>4. Location</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-          {provinceNames.map((province) => (
-            <Chip key={province} label={province} active={form.province === province} onPress={() => setForm((current) => ({ ...current, province, commune: provinces[province]?.[0] || "" }))} />
-          ))}
-        </ScrollView>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-          {communeOptions.map((commune) => (
-            <Chip key={commune} label={commune} active={form.commune === commune} onPress={() => update("commune", commune)} />
-          ))}
-        </ScrollView>
-        <View style={styles.locationBox}>
-          <Ionicons name="location-outline" size={20} color={colors.primary} />
-          <Text style={styles.locationText}>{form.province}, {form.commune}</Text>
-        </View>
-        <Text style={styles.coords}>{Number(form.lat).toFixed(5)}, {Number(form.lng).toFixed(5)}</Text>
-        {errors.location ? <Text style={styles.fieldError}>{errors.location}</Text> : null}
-        <Button title="Use GPS" variant="secondary" onPress={useCurrentLocation} />
-      </Card>
-
-      <Button title={submitting ? "Sending..." : "Send report"} disabled={submitting} onPress={submit} />
-      <Button title="Back" variant="secondary" onPress={() => navigation.goBack?.()} />
-    </Screen>
+        {step === 4 ? (
+          <View>
+            <ScreenTitle title="4. Where is it?" subtitle="Confirm the location of the incident." />
+            <SecondaryButton title="Use my location" icon="locate-outline" onPress={useCurrentLocation} strong />
+            <SecondaryButton title="Select on map" icon="map-outline" onPress={() => setApiError("Map selection will be available from the web dashboard. GPS is ready now.")} />
+            <View style={styles.mapPreview}>
+              <View style={styles.mapLineA} />
+              <View style={styles.mapLineB} />
+              <View style={styles.mapLineC} />
+              <View style={styles.mapPin}>
+                <Ionicons name="location" size={30} color={colors.primary} />
+              </View>
+            </View>
+            <View style={styles.locationCard}>
+              <View>
+                <Text style={styles.coordLabel}>Coordinates</Text>
+                <Text style={styles.coordValue}>{Number(form.lat).toFixed(5)}, {Number(form.lng).toFixed(5)}</Text>
+              </View>
+              <Text style={styles.editText}>Ready</Text>
+            </View>
+            <Text style={styles.smallLabel}>Area</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+              {provinceNames.slice(0, 10).map((province) => (
+                <Chip key={province} label={province} active={form.province === province} onPress={() => setForm((current) => ({ ...current, province, commune: provinces[province]?.[0] || "" }))} />
+              ))}
+            </ScrollView>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+              {communeOptions.map((commune) => (
+                <Chip key={commune} label={commune} active={form.commune === commune} onPress={() => update("commune", commune)} />
+              ))}
+            </ScrollView>
+            {errors.location ? <Text style={styles.fieldError}>{errors.location}</Text> : null}
+            <PrimaryButton title={submitting ? "Sending..." : "Send report"} icon="paper-plane-outline" onPress={submit} disabled={submitting} />
+            <Text style={styles.offlineNote}>Works offline. Will sync automatically.</Text>
+          </View>
+        ) : null}
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
-function SelectChips({ items, value, onChange }) {
+function ScreenTitle({ title, subtitle }) {
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-      {items.map((item) => (
-        <Chip key={item.key} label={item.label} active={value === item.key} onPress={() => onChange(item.key)} />
-      ))}
-    </ScrollView>
+    <View style={styles.screenTitle}>
+      <Text style={styles.stepTitle}>{title}</Text>
+      <Text style={styles.stepSubtitle}>{subtitle}</Text>
+    </View>
   );
 }
 
-function Chip({ label, icon, active, onPress, color }) {
+function IncidentCard({ item, active, onPress }) {
+  return (
+    <Pressable onPress={onPress} style={({ pressed }) => [styles.incidentCard, active && styles.incidentActive, pressed && styles.pressed]}>
+      <Ionicons name={item.icon} size={42} color={item.color} />
+      <Text style={styles.incidentLabel}>{item.label}</Text>
+    </Pressable>
+  );
+}
+
+function Chip({ label, icon, active, color, onPress }) {
   return (
     <Pressable onPress={onPress} style={({ pressed }) => [styles.chip, active && styles.chipActive, pressed && styles.pressed]}>
       {icon ? <Ionicons name={icon} size={16} color={active ? colors.primary : color || colors.muted} /> : null}
@@ -258,49 +386,528 @@ function Chip({ label, icon, active, onPress, color }) {
   );
 }
 
+function SeverityButton({ item, active, onPress }) {
+  return (
+    <Pressable onPress={onPress} style={({ pressed }) => [styles.severity, { borderColor: active ? item.color : `${item.color}55`, backgroundColor: active ? `${item.color}16` : "#fff" }, pressed && styles.pressed]}>
+      <Text style={[styles.severityText, { color: item.color }]}>{item.label}</Text>
+    </Pressable>
+  );
+}
+
+function FieldBlock({ label, error, children }) {
+  return (
+    <View style={styles.fieldBlock}>
+      <Text style={styles.fieldLabel}>{label}</Text>
+      {children}
+      {error ? <Text style={styles.fieldError}>{error}</Text> : null}
+    </View>
+  );
+}
+
+function PrimaryButton({ title, icon, onPress, disabled }) {
+  return (
+    <Pressable disabled={disabled} onPress={onPress} style={({ pressed }) => [styles.primaryButton, disabled && styles.disabled, pressed && styles.pressed]}>
+      <Text style={styles.primaryText}>{title}</Text>
+      {icon ? <Ionicons name={icon} size={22} color="#fff" /> : null}
+    </Pressable>
+  );
+}
+
+function SecondaryButton({ title, icon, onPress, strong, grow }) {
+  return (
+    <Pressable onPress={onPress} style={({ pressed }) => [styles.secondaryButton, grow && styles.secondaryGrow, strong && styles.secondaryStrong, pressed && styles.pressed]}>
+      {icon ? <Ionicons name={icon} size={22} color={strong ? colors.primaryDark : "#071a4f"} /> : null}
+      <Text style={[styles.secondaryText, strong && styles.secondaryStrongText]}>{title}</Text>
+    </Pressable>
+  );
+}
+
+function SummaryRow({ label, value, tone }) {
+  return (
+    <View style={styles.summaryRow}>
+      <Text style={styles.summaryLabel}>{label}</Text>
+      <Text style={[styles.summaryValue, tone ? { color: tone } : null]}>{value}</Text>
+    </View>
+  );
+}
+
+function labelFor(items, key) {
+  return items.find((item) => item.key === key)?.label || key;
+}
+
 const styles = StyleSheet.create({
-  stack: { gap: 14 },
-  sectionTitle: { color: colors.text, fontSize: 20, fontWeight: "900" },
-  chips: { gap: 9, paddingRight: 16 },
+  screen: {
+    backgroundColor: "#fff",
+    flex: 1,
+    paddingHorizontal: 22
+  },
+  topbar: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 18,
+    paddingBottom: 12,
+    paddingTop: 6
+  },
+  backButton: {
+    alignItems: "center",
+    height: 40,
+    justifyContent: "center",
+    width: 40
+  },
+  progress: {
+    flex: 1,
+    flexDirection: "row",
+    gap: 10,
+    justifyContent: "center"
+  },
+  progressBar: {
+    backgroundColor: "#e5e7eb",
+    borderRadius: 999,
+    height: 6,
+    width: 48
+  },
+  progressActive: {
+    backgroundColor: colors.primary
+  },
+  content: {
+    paddingBottom: 28
+  },
+  screenTitle: {
+    marginBottom: 20,
+    marginTop: 8
+  },
+  stepTitle: {
+    color: "#071a4f",
+    fontSize: 25,
+    fontWeight: "900"
+  },
+  stepSubtitle: {
+    color: colors.muted,
+    fontSize: 14,
+    fontWeight: "700",
+    lineHeight: 21,
+    marginTop: 6
+  },
+  incidentGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
+    marginBottom: 22
+  },
+  incidentCard: {
+    alignItems: "center",
+    backgroundColor: "#fff",
+    borderColor: colors.border,
+    borderRadius: 14,
+    borderWidth: 1,
+    height: 112,
+    justifyContent: "center",
+    width: "48%"
+  },
+  incidentActive: {
+    backgroundColor: "#f0fdf4",
+    borderColor: colors.primary
+  },
+  incidentLabel: {
+    color: "#071a4f",
+    fontSize: 13,
+    fontWeight: "900",
+    marginTop: 12
+  },
+  smallLabel: {
+    color: "#071a4f",
+    fontSize: 14,
+    fontWeight: "900",
+    marginBottom: 10,
+    marginTop: 8
+  },
+  chips: {
+    gap: 8,
+    paddingBottom: 12,
+    paddingRight: 16
+  },
   chip: {
+    alignItems: "center",
+    backgroundColor: "#fff",
+    borderColor: colors.border,
+    borderRadius: 999,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 9
+  },
+  chipActive: {
+    backgroundColor: "#ecfdf5",
+    borderColor: colors.primary
+  },
+  chipText: {
+    color: "#334155",
+    fontSize: 12,
+    fontWeight: "900"
+  },
+  chipTextActive: {
+    color: colors.primaryDark
+  },
+  infoBox: {
+    alignItems: "center",
+    backgroundColor: "#f1f5f9",
+    borderRadius: 14,
+    flexDirection: "row",
+    gap: 12,
+    marginBottom: 22,
+    marginTop: 8,
+    padding: 16
+  },
+  infoText: {
+    color: "#334155",
+    flex: 1,
+    fontSize: 13,
+    fontWeight: "700",
+    lineHeight: 19
+  },
+  photoBox: {
+    borderColor: "#9bd8b2",
+    borderRadius: 18,
+    borderStyle: "dashed",
+    borderWidth: 1,
+    height: 240,
+    marginBottom: 18,
+    overflow: "hidden"
+  },
+  photoEmpty: {
+    alignItems: "center",
+    backgroundColor: "#fbfefc",
+    flex: 1,
+    justifyContent: "center"
+  },
+  cameraCircle: {
+    alignItems: "center",
+    backgroundColor: "#dcfce7",
+    borderRadius: 999,
+    height: 92,
+    justifyContent: "center",
+    marginBottom: 18,
+    width: 92
+  },
+  photoTitle: {
+    color: colors.primaryDark,
+    fontSize: 18,
+    fontWeight: "900"
+  },
+  photoHint: {
+    color: colors.muted,
+    fontSize: 14,
+    fontWeight: "700",
+    marginTop: 6
+  },
+  photoPreview: {
+    height: "100%",
+    width: "100%"
+  },
+  twoButtons: {
+    flexDirection: "row",
+    gap: 12,
+    marginBottom: 20
+  },
+  tipBox: {
+    alignItems: "center",
+    backgroundColor: "#eef8f1",
+    borderRadius: 14,
+    flexDirection: "row",
+    gap: 12,
+    marginBottom: 22,
+    padding: 16
+  },
+  tipText: {
+    color: "#334155",
+    flex: 1,
+    fontSize: 13,
+    fontWeight: "700",
+    lineHeight: 19
+  },
+  fieldBlock: {
+    marginBottom: 18
+  },
+  fieldLabel: {
+    color: "#071a4f",
+    fontSize: 13,
+    fontWeight: "900",
+    marginBottom: 8
+  },
+  input: {
+    borderColor: colors.border,
+    borderRadius: 12,
+    borderWidth: 1,
+    color: "#071a4f",
+    fontSize: 15,
+    fontWeight: "700",
+    minHeight: 54,
+    paddingHorizontal: 14,
+    paddingVertical: 12
+  },
+  textarea: {
+    minHeight: 138,
+    textAlignVertical: "top"
+  },
+  counter: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: "800",
+    marginTop: 6,
+    textAlign: "right"
+  },
+  severityRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: 22
+  },
+  severity: {
+    alignItems: "center",
+    borderRadius: 12,
+    borderWidth: 1,
+    flex: 1,
+    paddingVertical: 15
+  },
+  severityText: {
+    fontSize: 13,
+    fontWeight: "900"
+  },
+  mapPreview: {
+    backgroundColor: "#edf6f6",
+    borderRadius: 16,
+    height: 176,
+    marginBottom: 12,
+    marginTop: 14,
+    overflow: "hidden"
+  },
+  mapLineA: {
+    backgroundColor: "#d8e7e8",
+    height: 2,
+    left: -20,
+    position: "absolute",
+    top: 48,
+    transform: [{ rotate: "18deg" }],
+    width: 420
+  },
+  mapLineB: {
+    backgroundColor: "#d8e7e8",
+    height: 2,
+    left: 10,
+    position: "absolute",
+    top: 104,
+    transform: [{ rotate: "-28deg" }],
+    width: 360
+  },
+  mapLineC: {
+    backgroundColor: "#d8e7e8",
+    height: 240,
+    left: 170,
+    position: "absolute",
+    top: -20,
+    width: 2
+  },
+  mapPin: {
+    left: "46%",
+    position: "absolute",
+    top: "40%"
+  },
+  locationCard: {
     alignItems: "center",
     backgroundColor: "#fff",
     borderColor: colors.border,
     borderRadius: 14,
     borderWidth: 1,
     flexDirection: "row",
-    gap: 7,
-    paddingHorizontal: 12,
-    paddingVertical: 10
+    justifyContent: "space-between",
+    marginBottom: 14,
+    padding: 16
   },
-  chipActive: { backgroundColor: "#ecfdf5", borderColor: "#86efac" },
-  chipText: { color: colors.text, fontWeight: "900" },
-  chipTextActive: { color: colors.primary },
-  pressed: { opacity: 0.75 },
-  previewWrap: { position: "relative" },
-  preview: { borderRadius: 18, height: 210, width: "100%" },
-  removeImage: {
+  coordLabel: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: "800",
+    marginBottom: 4
+  },
+  coordValue: {
+    color: "#071a4f",
+    fontSize: 15,
+    fontWeight: "900"
+  },
+  editText: {
+    color: colors.primaryDark,
+    fontSize: 13,
+    fontWeight: "900"
+  },
+  primaryButton: {
     alignItems: "center",
-    backgroundColor: colors.danger,
-    borderRadius: 99,
-    height: 34,
+    backgroundColor: colors.primary,
+    borderRadius: 14,
+    elevation: 4,
+    flexDirection: "row",
+    gap: 10,
     justifyContent: "center",
-    position: "absolute",
-    right: 10,
-    top: 10,
-    width: 34
+    minHeight: 58,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.18,
+    shadowRadius: 14
   },
-  emptyImage: { alignItems: "center", backgroundColor: "#f8fafc", borderRadius: 18, gap: 8, padding: 20 },
-  row: { flexDirection: "row", gap: 10 },
-  rowButton: { flex: 1 },
-  offlineCard: { alignItems: "center", flexDirection: "row", gap: 12, justifyContent: "space-between" },
-  offlineText: { color: colors.text, flex: 1, fontWeight: "900" },
-  locationBox: { alignItems: "center", backgroundColor: "#ecfdf5", borderRadius: 16, flexDirection: "row", gap: 9, padding: 14 },
-  locationText: { color: colors.text, flex: 1, fontWeight: "900" },
-  coords: { color: colors.muted, fontSize: 12, fontWeight: "800" },
-  muted: { color: colors.muted, fontWeight: "700", lineHeight: 21 },
-  notice: { backgroundColor: "#ecfdf5", borderRadius: 14, color: colors.primary, fontWeight: "900", padding: 12 },
-  warning: { backgroundColor: "#fff7ed", borderRadius: 14, color: "#c2410c", fontWeight: "900", padding: 12 },
-  error: { backgroundColor: "#fef2f2", borderRadius: 14, color: colors.danger, fontWeight: "800", padding: 12 },
-  fieldError: { color: colors.danger, fontWeight: "800" }
+  primaryText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "900"
+  },
+  secondaryButton: {
+    alignItems: "center",
+    backgroundColor: "#fff",
+    borderColor: colors.border,
+    borderRadius: 14,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: 8,
+    justifyContent: "center",
+    marginBottom: 12,
+    minHeight: 54,
+    paddingHorizontal: 14
+  },
+  secondaryGrow: {
+    flex: 1
+  },
+  secondaryStrong: {
+    borderColor: colors.primary,
+    flex: 0,
+    width: "100%"
+  },
+  secondaryText: {
+    color: "#071a4f",
+    fontSize: 14,
+    fontWeight: "900"
+  },
+  secondaryStrongText: {
+    color: colors.primaryDark
+  },
+  disabled: {
+    opacity: 0.62
+  },
+  pressed: {
+    opacity: 0.78,
+    transform: [{ scale: 0.99 }]
+  },
+  error: {
+    backgroundColor: "#fef2f2",
+    borderRadius: 12,
+    color: colors.danger,
+    fontWeight: "800",
+    marginBottom: 10,
+    padding: 12
+  },
+  fieldError: {
+    color: colors.danger,
+    fontSize: 12,
+    fontWeight: "800",
+    marginTop: 6
+  },
+  offlinePill: {
+    alignItems: "center",
+    alignSelf: "flex-start",
+    backgroundColor: "#fff7ed",
+    borderRadius: 999,
+    flexDirection: "row",
+    gap: 7,
+    marginBottom: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8
+  },
+  offlineText: {
+    color: "#9a3412",
+    fontSize: 12,
+    fontWeight: "900"
+  },
+  offlineNote: {
+    color: colors.muted,
+    fontSize: 13,
+    fontWeight: "800",
+    marginTop: 12,
+    textAlign: "center"
+  },
+  successScreen: {
+    alignItems: "center",
+    backgroundColor: colors.primary,
+    flex: 1,
+    justifyContent: "center",
+    paddingHorizontal: 22
+  },
+  successIcon: {
+    alignItems: "center",
+    backgroundColor: "#fff",
+    borderRadius: 999,
+    height: 112,
+    justifyContent: "center",
+    marginBottom: 24,
+    width: 112
+  },
+  successTitle: {
+    color: "#fff",
+    fontSize: 30,
+    fontWeight: "900",
+    textAlign: "center"
+  },
+  successText: {
+    color: "#eafff1",
+    fontSize: 15,
+    fontWeight: "700",
+    lineHeight: 22,
+    marginBottom: 24,
+    marginTop: 8,
+    maxWidth: 280,
+    textAlign: "center"
+  },
+  summary: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    marginBottom: 18,
+    padding: 18,
+    width: "100%"
+  },
+  summaryTitle: {
+    color: "#071a4f",
+    fontSize: 16,
+    fontWeight: "900",
+    marginBottom: 12
+  },
+  summaryRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingVertical: 7
+  },
+  summaryLabel: {
+    color: colors.muted,
+    fontWeight: "800"
+  },
+  summaryValue: {
+    color: "#071a4f",
+    flexShrink: 1,
+    fontWeight: "900",
+    textAlign: "right"
+  },
+  secondaryWide: {
+    alignItems: "center",
+    backgroundColor: "#fff",
+    borderRadius: 14,
+    flexDirection: "row",
+    gap: 8,
+    justifyContent: "center",
+    marginBottom: 8,
+    minHeight: 54,
+    width: "100%"
+  },
+  linkButton: {
+    padding: 11
+  },
+  linkText: {
+    color: "#fff",
+    fontSize: 15,
+    fontWeight: "900"
+  }
 });
