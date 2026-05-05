@@ -3,7 +3,6 @@ import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
 import { useEffect, useState } from "react";
 import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
-import MapView, { Marker, Polygon, UrlTile } from "react-native-maps";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../services/api";
@@ -447,6 +446,7 @@ export default function ReportScreen({ navigation }) {
   const [footprints, setFootprints] = useState([]);
   const [selectedFootprint, setSelectedFootprint] = useState(null);
   const [footprintStatus, setFootprintStatus] = useState("");
+  const [mapSize, setMapSize] = useState({ width: 0, height: 0 });
   const provinceNames = Object.keys(provinces);
   const communeOptions = provinces[form.province] || [];
   const mapRegion = {
@@ -509,6 +509,34 @@ export default function ReportScreen({ navigation }) {
     }));
     setErrors((current) => ({ ...current, location: "" }));
     setApiError("");
+  }
+
+  function updateLocationFromCanvas(event) {
+    if (!mapSize.width || !mapSize.height) return;
+    const { locationX, locationY } = event.nativeEvent;
+    const latitude = mapRegion.latitude + (0.5 - locationY / mapSize.height) * mapRegion.latitudeDelta;
+    const longitude = mapRegion.longitude + (locationX / mapSize.width - 0.5) * mapRegion.longitudeDelta;
+    updateMapLocation({ latitude, longitude });
+  }
+
+  function footprintBoxStyle(footprint) {
+    if (!mapSize.width || !mapSize.height || !Array.isArray(footprint.positions)) return null;
+    const lats = footprint.positions.map((point) => point.latitude);
+    const lngs = footprint.positions.map((point) => point.longitude);
+    const minLat = Math.min(...lats);
+    const maxLat = Math.max(...lats);
+    const minLng = Math.min(...lngs);
+    const maxLng = Math.max(...lngs);
+    const left = ((minLng - (mapRegion.longitude - mapRegion.longitudeDelta / 2)) / mapRegion.longitudeDelta) * mapSize.width;
+    const right = ((maxLng - (mapRegion.longitude - mapRegion.longitudeDelta / 2)) / mapRegion.longitudeDelta) * mapSize.width;
+    const top = (((mapRegion.latitude + mapRegion.latitudeDelta / 2) - maxLat) / mapRegion.latitudeDelta) * mapSize.height;
+    const bottom = (((mapRegion.latitude + mapRegion.latitudeDelta / 2) - minLat) / mapRegion.latitudeDelta) * mapSize.height;
+    return {
+      left: Math.max(6, Math.min(mapSize.width - 34, left)),
+      top: Math.max(6, Math.min(mapSize.height - 34, top)),
+      width: Math.max(28, Math.min(92, right - left)),
+      height: Math.max(22, Math.min(76, bottom - top))
+    };
   }
 
   function validate(targetStep = step) {
@@ -883,35 +911,45 @@ export default function ReportScreen({ navigation }) {
             <ScreenTitle title={tr(form.language, "where")} subtitle={tr(form.language, "whereSub")} />
             <SecondaryButton title={tr(form.language, "gps")} icon="locate-outline" onPress={useCurrentLocation} strong />
             <SecondaryButton title="Load building footprints" icon="business-outline" onPress={() => loadFootprints({ lat: form.lat, lng: form.lng })} />
-            <View style={styles.nativeMapWrap}>
-              <MapView
-                style={styles.nativeMap}
-                region={mapRegion}
-                mapType="none"
-                onPress={(event) => updateMapLocation(event.nativeEvent.coordinate)}
-              >
-                <UrlTile urlTemplate="https://tile.openstreetmap.org/{z}/{x}/{y}.png" maximumZ={19} flipY={false} />
-                {footprints.map((footprint) => (
-                  <Polygon
+            <Pressable
+              style={styles.nativeMapWrap}
+              onLayout={(event) => setMapSize(event.nativeEvent.layout)}
+              onPress={updateLocationFromCanvas}
+            >
+              <View style={styles.mapGridVerticalA} />
+              <View style={styles.mapGridVerticalB} />
+              <View style={styles.mapGridHorizontalA} />
+              <View style={styles.mapGridHorizontalB} />
+              <View style={styles.mapRoadA} />
+              <View style={styles.mapRoadB} />
+              {footprints.map((footprint) => {
+                const box = footprintBoxStyle(footprint);
+                if (!box) return null;
+                return (
+                  <Pressable
                     key={footprint.id}
-                    coordinates={footprint.positions}
-                    tappable
-                    strokeColor={selectedFootprint?.id === footprint.id ? colors.primary : "#0f766e"}
-                    fillColor={selectedFootprint?.id === footprint.id ? "rgba(22, 163, 74, 0.28)" : "rgba(15, 118, 110, 0.14)"}
-                    strokeWidth={selectedFootprint?.id === footprint.id ? 3 : 1}
+                    style={[
+                      styles.footprintBox,
+                      box,
+                      selectedFootprint?.id === footprint.id && styles.footprintBoxActive
+                    ]}
                     onPress={() => {
                       setSelectedFootprint(footprint);
                       setApiError("");
                     }}
-                  />
-                ))}
-                <Marker coordinate={{ latitude: mapRegion.latitude, longitude: mapRegion.longitude }} pinColor={colors.primary} />
-              </MapView>
+                  >
+                    <Text style={styles.footprintBoxText}>{selectedFootprint?.id === footprint.id ? "Selected" : ""}</Text>
+                  </Pressable>
+                );
+              })}
+              <View style={styles.centerPin}>
+                <Ionicons name="location" size={34} color={colors.primary} />
+              </View>
               <View style={styles.footprintBadge}>
                 <Ionicons name="business-outline" size={16} color={colors.primaryDark} />
                 <Text style={styles.footprintBadgeText}>{footprintStatus || "Tap map to move the report pin."}</Text>
               </View>
-            </View>
+            </Pressable>
             {selectedFootprint ? (
               <View style={styles.selectedFootprint}>
                 <Ionicons name="checkmark-circle" size={20} color={colors.primary} />
@@ -1352,9 +1390,77 @@ const styles = StyleSheet.create({
     marginTop: 14,
     overflow: "hidden"
   },
-  nativeMap: {
+  mapGridVerticalA: {
+    backgroundColor: "rgba(15, 118, 110, 0.12)",
     height: "100%",
+    left: "32%",
+    position: "absolute",
+    width: 1
+  },
+  mapGridVerticalB: {
+    backgroundColor: "rgba(15, 118, 110, 0.12)",
+    height: "100%",
+    left: "67%",
+    position: "absolute",
+    width: 1
+  },
+  mapGridHorizontalA: {
+    backgroundColor: "rgba(15, 118, 110, 0.12)",
+    height: 1,
+    position: "absolute",
+    top: "34%",
     width: "100%"
+  },
+  mapGridHorizontalB: {
+    backgroundColor: "rgba(15, 118, 110, 0.12)",
+    height: 1,
+    position: "absolute",
+    top: "66%",
+    width: "100%"
+  },
+  mapRoadA: {
+    backgroundColor: "rgba(255, 255, 255, 0.78)",
+    height: 16,
+    left: -30,
+    position: "absolute",
+    top: 96,
+    transform: [{ rotate: "-18deg" }],
+    width: 430
+  },
+  mapRoadB: {
+    backgroundColor: "rgba(255, 255, 255, 0.66)",
+    height: 13,
+    left: -20,
+    position: "absolute",
+    top: 162,
+    transform: [{ rotate: "24deg" }],
+    width: 420
+  },
+  footprintBox: {
+    alignItems: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.84)",
+    borderColor: "#0f766e",
+    borderRadius: 5,
+    borderWidth: 1,
+    justifyContent: "center",
+    position: "absolute"
+  },
+  footprintBoxActive: {
+    backgroundColor: "rgba(22, 163, 74, 0.34)",
+    borderColor: colors.primary,
+    borderWidth: 2
+  },
+  footprintBoxText: {
+    color: colors.primaryDark,
+    fontSize: 9,
+    fontWeight: "900"
+  },
+  centerPin: {
+    left: "50%",
+    marginLeft: -17,
+    marginTop: -34,
+    position: "absolute",
+    top: "50%"
   },
   footprintBadge: {
     alignItems: "center",
