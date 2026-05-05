@@ -1,6 +1,6 @@
 {
   "name": "tala-mboka-mobile",
-  "version": "0.1.0",
+  "version": "0.5.9",
   "main": "index.js",
   "scripts": {
     "start": "expo start",

@@ -1,4 +1,5 @@
-import { StyleSheet, Text } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import Screen from "../components/Screen";
 import BrandHeader from "../components/BrandHeader";
 import Card from "../components/Card";
@@ -11,35 +12,40 @@ export default function AboutScreen({ navigation }) {
     <Screen>
       <BrandHeader
         eyebrow="À propos"
-        title="Votre allié pour un quartier plus visible et mieux suivi"
-        subtitle="Tala Mboka donne une voix aux citoyens."
+        title="Une application pour agir vite"
+        subtitle="Tala Mboka aide les citoyens à signaler les problèmes de leur quartier."
       />
       <Card style={styles.stack}>
         <Text style={styles.paragraph}>
-          Tala Mboka est une plateforme citoyenne qui permet de signaler facilement les problèmes du quartier :
-          routes dégradées, coupures d'électricité, insécurité, insalubrité et autres situations importantes.
+          Signalez une route abîmée, une coupure d'eau, un problème d'électricité, l'insalubrité ou une situation d'insécurité.
         </Text>
         <Text style={styles.paragraph}>
-          Chaque signalement devient visible, localisé et suivi afin d'encourager des actions concrètes pour améliorer
-          les conditions de vie.
+          Chaque alerte devient visible, localisée et plus facile à suivre par la communauté.
         </Text>
       </Card>
       <Card style={styles.stack}>
-        <Text style={styles.title}>Pourquoi utiliser Tala Mboka ?</Text>
-        <Text style={styles.item}>• Signaler un problème en quelques secondes</Text>
-        <Text style={styles.item}>• Voir les incidents autour de soi</Text>
-        <Text style={styles.item}>• Suivre l'évolution des situations signalées</Text>
-        <Text style={styles.item}>• Contribuer à rendre son quartier plus sûr et plus propre</Text>
+        <Text style={styles.title}>Ce que vous pouvez faire</Text>
+        <Feature icon="flash-outline" text="Créer une alerte en quelques secondes" />
+        <Feature icon="map-outline" text="Voir les problèmes autour de vous" />
+        <Feature icon="notifications-outline" text="Recevoir les mises à jour importantes" />
+        <Feature icon="people-outline" text="Soutenir les alertes de la communauté" />
       </Card>
       <Card style={styles.stack}>
-        <Text style={styles.title}>Développeur</Text>
-        <Text style={styles.paragraph}>
-          Application développée par Moïse Mopepe pour encourager la participation citoyenne.
-        </Text>
+        <Text style={styles.title}>Application</Text>
+        <Text style={styles.paragraph}>Développée pour encourager la participation citoyenne en RDC.</Text>
         <Text style={styles.version}>Version {APP_VERSION}</Text>
       </Card>
       <Button title="Signaler maintenant" onPress={() => navigation.navigate("Signaler")} />
     </Screen>
+  );
+}
+
+function Feature({ icon, text }) {
+  return (
+    <View style={styles.feature}>
+      <Ionicons name={icon} size={20} color={colors.primary} />
+      <Text style={styles.item}>{text}</Text>
+    </View>
   );
 }
 
@@ -58,8 +64,14 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     lineHeight: 24
   },
+  feature: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 10
+  },
   item: {
     color: colors.text,
+    flex: 1,
     fontSize: 15,
     fontWeight: "800",
     lineHeight: 22

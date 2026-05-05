@@ -2,7 +2,8 @@ import { API_URL } from "../config";
 
 export async function api(path, options = {}, token = "") {
   const endpoint = path.startsWith("/") ? path : `/${path}`;
-  const headers = options.body instanceof FormData ? {} : { "Content-Type": "application/json" };
+  const isFormData = options.body instanceof FormData;
+  const headers = isFormData ? {} : { "Content-Type": "application/json" };
 
   if (token) headers.Authorization = `Bearer ${token}`;
 

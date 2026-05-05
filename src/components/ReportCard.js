@@ -1,13 +1,23 @@
-import { Image, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import Card from "./Card";
-import { categoryLabel } from "../utils/categories";
+import { categoryByKey } from "../utils/categories";
+import { riskMeta } from "../utils/risk";
 import { colors } from "../theme";
 import { imageUrl } from "../services/api";
 
-export default function ReportCard({ report }) {
+function formatDate(value) {
+  if (!value) return "Date non disponible";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Date non disponible";
+  return date.toLocaleDateString("fr-FR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+}
+
+export default function ReportCard({ report, onMapPress }) {
   const image = report.imageUrl || report.imageUrls?.[0];
-  const likesCount = report.likesCount || report.likes || 0;
+  const likesCount = Array.isArray(report.likes) ? report.likes.length : report.likesCount || 0;
+  const category = categoryByKey(report.category);
+  const risk = riskMeta(report.status || report.risk);
 
   return (
     <Card style={styles.card}>
@@ -15,24 +25,48 @@ export default function ReportCard({ report }) {
         <Image source={{ uri: imageUrl(image) }} style={styles.image} resizeMode="cover" />
       ) : (
         <View style={styles.placeholder}>
-          <Ionicons name="image-outline" size={34} color="#94a3b8" />
-          <Text style={styles.placeholderText}>Aucun visuel</Text>
+          <Ionicons name={category.icon} size={36} color={category.color} />
+          <Text style={styles.placeholderText}>{category.label}</Text>
         </View>
       )}
+
       <View style={styles.body}>
-        <Text style={styles.category}>{categoryLabel(report.category)}</Text>
-        <Text style={styles.title}>{report.title}</Text>
-        <Text numberOfLines={2} style={styles.description}>{report.description}</Text>
-        <View style={styles.locationBox}>
-          <View style={styles.locationLine}>
-            <Ionicons name="location-outline" size={16} color={colors.primary} />
-            <Text style={styles.location}>{report.province || "-"} / {report.commune || "-"}</Text>
+        <View style={styles.topLine}>
+          <View style={[styles.categoryPill, { backgroundColor: `${category.color}18` }]}>
+            <Ionicons name={category.icon} size={15} color={category.color} />
+            <Text style={[styles.categoryText, { color: category.color }]}>{category.label}</Text>
           </View>
-          <Text style={styles.coords}>
-            {report.location?.lat?.toFixed?.(4) || report.location?.lat}, {report.location?.lng?.toFixed?.(4) || report.location?.lng}
-          </Text>
+          <View style={[styles.riskPill, { backgroundColor: risk.bg }]}>
+            <Text style={[styles.riskText, { color: risk.color }]}>{risk.shortLabel}</Text>
+          </View>
         </View>
-        <Text style={styles.likes}>{likesCount} personne{likesCount > 1 ? "s" : ""} concernée{likesCount > 1 ? "s" : ""}</Text>
+
+        <Text style={styles.title}>{report.title || "Alerte citoyenne"}</Text>
+        <Text numberOfLines={2} style={styles.description}>{report.description || "Aucune description fournie."}</Text>
+
+        <View style={styles.metaBox}>
+          <View style={styles.metaLine}>
+            <Ionicons name="location-outline" size={16} color={colors.primary} />
+            <Text style={styles.metaText}>{report.province || "Province"} / {report.commune || "Commune"}</Text>
+          </View>
+          <View style={styles.metaLine}>
+            <Ionicons name="time-outline" size={16} color={colors.muted} />
+            <Text style={styles.muted}>{formatDate(report.createdAt)}</Text>
+          </View>
+        </View>
+
+        <View style={styles.actions}>
+          <View style={styles.support}>
+            <Ionicons name="people-outline" size={17} color={colors.primary} />
+            <Text style={styles.supportText}>{likesCount} concerné{likesCount > 1 ? "s" : ""}</Text>
+          </View>
+          {onMapPress ? (
+            <Pressable onPress={() => onMapPress(report)} style={({ pressed }) => [styles.mapButton, pressed && styles.pressed]}>
+              <Ionicons name="map-outline" size={17} color={colors.text} />
+              <Text style={styles.mapButtonText}>Carte</Text>
+            </Pressable>
+          ) : null}
+        </View>
       </View>
     </Card>
   );
@@ -44,29 +78,50 @@ const styles = StyleSheet.create({
     padding: 0
   },
   image: {
-    height: 190,
+    height: 172,
     width: "100%"
   },
   placeholder: {
     alignItems: "center",
-    backgroundColor: "#eef2f7",
+    backgroundColor: "#eef6f1",
     gap: 8,
-    height: 190,
+    height: 172,
     justifyContent: "center"
   },
   placeholderText: {
-    color: colors.muted,
-    fontWeight: "800"
+    color: colors.text,
+    fontWeight: "900"
   },
   body: {
-    gap: 10,
-    padding: 16
+    gap: 11,
+    padding: 15
   },
-  category: {
-    color: colors.primary,
+  topLine: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 10
+  },
+  categoryPill: {
+    alignItems: "center",
+    borderRadius: 99,
+    flexDirection: "row",
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 7
+  },
+  categoryText: {
     fontSize: 12,
-    fontWeight: "900",
-    textTransform: "uppercase"
+    fontWeight: "900"
+  },
+  riskPill: {
+    borderRadius: 99,
+    paddingHorizontal: 10,
+    paddingVertical: 7
+  },
+  riskText: {
+    fontSize: 12,
+    fontWeight: "900"
   },
   title: {
     color: colors.text,
@@ -79,31 +134,62 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     lineHeight: 21
   },
-  locationBox: {
+  metaBox: {
     backgroundColor: "#f8fafc",
     borderRadius: 14,
-    gap: 4,
+    gap: 7,
     padding: 12
   },
-  locationLine: {
+  metaLine: {
     alignItems: "center",
     flexDirection: "row",
-    gap: 6
+    gap: 7
   },
-  location: {
+  metaText: {
     color: colors.text,
+    flex: 1,
     fontWeight: "800"
   },
-  coords: {
+  muted: {
     color: colors.muted,
     fontSize: 12,
     fontWeight: "700"
   },
-  likes: {
+  actions: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 10
+  },
+  support: {
+    alignItems: "center",
     backgroundColor: "#ecfdf5",
-    borderRadius: 12,
+    borderRadius: 14,
+    flexDirection: "row",
+    gap: 7,
+    paddingHorizontal: 12,
+    paddingVertical: 10
+  },
+  supportText: {
     color: colors.primary,
-    fontWeight: "900",
-    padding: 12
+    fontWeight: "900"
+  },
+  mapButton: {
+    alignItems: "center",
+    borderColor: colors.border,
+    borderRadius: 14,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: 7,
+    paddingHorizontal: 12,
+    paddingVertical: 10
+  },
+  mapButtonText: {
+    color: colors.text,
+    fontWeight: "900"
+  },
+  pressed: {
+    opacity: 0.75,
+    transform: [{ scale: 0.98 }]
   }
 });

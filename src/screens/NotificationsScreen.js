@@ -1,4 +1,5 @@
-import { StyleSheet, Text, View } from "react-native";
+import { RefreshControl, StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useEffect, useState } from "react";
 import Screen from "../components/Screen";
 import BrandHeader from "../components/BrandHeader";
@@ -44,26 +45,18 @@ export default function NotificationsScreen({ navigation }) {
   if (!isAuthenticated) {
     return (
       <Screen>
-        <BrandHeader
-          eyebrow="Notifications"
-          title="Connectez-vous"
-          subtitle="Les notifications sont réservées aux utilisateurs connectés."
-        />
+        <BrandHeader eyebrow="Notifications" title="Connectez-vous" subtitle="Les notifications sont réservées aux utilisateurs connectés." />
         <Button title="Aller au compte" onPress={() => navigation.navigate("Compte")} />
       </Screen>
     );
   }
 
   return (
-    <Screen>
-      <BrandHeader
-        eyebrow="Notifications"
-        title="Mises à jour"
-        subtitle="Lisez tranquillement les informations importantes."
-      />
+    <Screen refreshControl={<RefreshControl refreshing={loading} onRefresh={loadNotifications} />}>
+      <BrandHeader eyebrow="Notifications" title="Mises à jour" subtitle="Recevez les changements importants liés à vos alertes." />
       <View style={styles.actions}>
         <Button title="Actualiser" variant="secondary" onPress={loadNotifications} style={styles.action} />
-        <Button title="Tout marquer comme lu" onPress={markRead} style={styles.action} />
+        <Button title="Tout lu" onPress={markRead} style={styles.action} />
       </View>
       {error ? <Text style={styles.error}>{error}</Text> : null}
       {loading ? (
@@ -73,6 +66,7 @@ export default function NotificationsScreen({ navigation }) {
       ) : null}
       {!loading && items.length === 0 ? (
         <Card style={styles.empty}>
+          <Ionicons name="notifications-outline" size={38} color={colors.muted} />
           <Text style={styles.emptyTitle}>Aucune notification</Text>
           <Text style={styles.muted}>Les prochaines mises à jour apparaîtront ici.</Text>
         </Card>
