@@ -514,11 +514,15 @@ export default function ReportScreen({ navigation }) {
       await sendPayload(payload);
       setSuccess({ mode: "sent", payload });
       setForm(initialForm);
-    } catch {
-      await saveOfflineReport(payload);
-      await refreshOfflineCount();
-      setSuccess({ mode: "offline", payload });
-      setForm(initialForm);
+    } catch (sendError) {
+      try {
+        await saveOfflineReport(payload);
+        await refreshOfflineCount();
+        setSuccess({ mode: "offline", payload, reason: sendError.message });
+        setForm(initialForm);
+      } catch (offlineError) {
+        setApiError(offlineError.message || "Unable to save this report offline. Please keep the app open and try again.");
+      }
     } finally {
       setSubmitting(false);
     }
@@ -526,9 +530,13 @@ export default function ReportScreen({ navigation }) {
 
   async function syncQueue() {
     setSubmitting(true);
+    setApiError("");
     try {
-      await syncOfflineReports(sendPayload);
+      const result = await syncOfflineReports(sendPayload);
       await refreshOfflineCount();
+      if (result.failed.length > 0) {
+        setApiError(`${result.failed.length} report(s) still offline. They will sync when the connection returns.`);
+      }
     } catch (error) {
       setApiError(error.message);
     } finally {

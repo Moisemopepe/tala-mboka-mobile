@@ -15,14 +15,18 @@ async function writeQueue(items) {
 
 async function persistImage(image) {
   if (!image?.uri) return null;
-  await FileSystem.makeDirectoryAsync(photoDir, { intermediates: true }).catch(() => {});
-  const extension = image.uri.split(".").pop() || "jpg";
-  const target = `${photoDir}${Date.now()}-${Math.round(Math.random() * 1e9)}.${extension}`;
-  await FileSystem.copyAsync({ from: image.uri, to: target });
-  return {
-    ...image,
-    uri: target
-  };
+  try {
+    await FileSystem.makeDirectoryAsync(photoDir, { intermediates: true }).catch(() => {});
+    const extension = image.uri.split(".").pop()?.split("?")[0] || "jpg";
+    const target = `${photoDir}${Date.now()}-${Math.round(Math.random() * 1e9)}.${extension}`;
+    await FileSystem.copyAsync({ from: image.uri, to: target });
+    return {
+      ...image,
+      uri: target
+    };
+  } catch {
+    return image;
+  }
 }
 
 export async function saveOfflineReport(payload) {
