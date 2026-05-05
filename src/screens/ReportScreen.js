@@ -3,11 +3,13 @@ import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
 import { useEffect, useState } from "react";
 import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import MapView, { Marker, Polygon, UrlTile } from "react-native-maps";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../services/api";
 import { listOfflineReports, saveOfflineReport, syncOfflineReports } from "../services/offlineQueue";
 import { colors } from "../theme";
+import { createFootprintsAround, fetchOsmBuildings } from "../utils/buildingFootprints";
 import { categories } from "../utils/categories";
 import { defaultLocation, provinces } from "../utils/locations";
 
@@ -442,12 +444,27 @@ export default function ReportScreen({ navigation }) {
   const [success, setSuccess] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [offlineCount, setOfflineCount] = useState(0);
+  const [footprints, setFootprints] = useState([]);
+  const [selectedFootprint, setSelectedFootprint] = useState(null);
+  const [footprintStatus, setFootprintStatus] = useState("");
   const provinceNames = Object.keys(provinces);
   const communeOptions = provinces[form.province] || [];
+  const mapRegion = {
+    latitude: Number(form.lat) || defaultLocation.lat,
+    longitude: Number(form.lng) || defaultLocation.lng,
+    latitudeDelta: 0.009,
+    longitudeDelta: 0.009
+  };
 
   useEffect(() => {
     refreshOfflineCount();
   }, []);
+
+  useEffect(() => {
+    if (step === 4) {
+      loadFootprints({ lat: form.lat, lng: form.lng });
+    }
+  }, [step, form.lat, form.lng]);
 
   async function refreshOfflineCount() {
     const items = await listOfflineReports().catch(() => []);
@@ -457,6 +474,40 @@ export default function ReportScreen({ navigation }) {
   function update(key, value) {
     setForm((current) => ({ ...current, [key]: value }));
     setErrors((current) => ({ ...current, [key]: "" }));
+    setApiError("");
+  }
+
+  async function loadFootprints(location) {
+    const lat = Number(location.lat ?? location.latitude);
+    const lng = Number(location.lng ?? location.longitude);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+
+    setFootprintStatus("Loading OSM building footprints...");
+    try {
+      const osmFootprints = await fetchOsmBuildings({ lat, lng });
+      if (osmFootprints.length) {
+        setFootprints(osmFootprints);
+        setFootprintStatus(`${osmFootprints.length} OSM buildings loaded. Tap a footprint to attach it.`);
+        return;
+      }
+      const fallback = createFootprintsAround({ lat, lng }, `${form.commune}, ${form.province}`);
+      setFootprints(fallback);
+      setFootprintStatus("No OSM building found nearby. Offline selectable grid is available.");
+    } catch (error) {
+      const fallback = createFootprintsAround({ lat, lng }, `${form.commune}, ${form.province}`);
+      setFootprints(fallback);
+      setFootprintStatus("OSM is unavailable now. Offline selectable grid is available.");
+    }
+  }
+
+  function updateMapLocation(coordinate) {
+    setSelectedFootprint(null);
+    setForm((current) => ({
+      ...current,
+      lat: coordinate.latitude,
+      lng: coordinate.longitude
+    }));
+    setErrors((current) => ({ ...current, location: "" }));
     setApiError("");
   }
 
@@ -534,12 +585,18 @@ export default function ReportScreen({ navigation }) {
       return;
     }
     const current = await Location.getCurrentPositionAsync({});
-    update("lat", current.coords.latitude);
-    update("lng", current.coords.longitude);
+    setSelectedFootprint(null);
+    setForm((existing) => ({
+      ...existing,
+      lat: current.coords.latitude,
+      lng: current.coords.longitude
+    }));
+    await loadFootprints({ lat: current.coords.latitude, lng: current.coords.longitude });
   }
 
   function buildFormData(payload) {
     const body = new FormData();
+    const footprint = payload.selectedFootprint;
     body.append("title", payload.title.trim());
     body.append("description", composeDescription(payload));
     body.append("category", payload.category);
@@ -565,9 +622,10 @@ export default function ReportScreen({ navigation }) {
     body.append("offlineCreatedAt", payload.offlineCreatedAt || "");
     body.append("appVersion", "mobile-mvp");
     body.append("crisisId", payload.crisisId || "kinshasa-flood-response");
-    body.append("buildingFootprintId", payload.assetId.trim() || `${payload.province}-${payload.commune}-${Number(payload.lat).toFixed(5)}-${Number(payload.lng).toFixed(5)}`);
-    body.append("buildingFootprintName", payload.infrastructureName.trim());
-    body.append("buildingFootprintSource", payload.assetId.trim() ? "user-provided" : "gps-derived-prototype");
+    body.append("buildingFootprintId", footprint?.id || payload.assetId.trim() || `${payload.province}-${payload.commune}-${Number(payload.lat).toFixed(5)}-${Number(payload.lng).toFixed(5)}`);
+    body.append("buildingFootprintName", footprint?.name || payload.infrastructureName.trim());
+    body.append("buildingFootprintSource", footprint?.source || (payload.assetId.trim() ? "user-provided" : "gps-derived-prototype"));
+    if (footprint?.geometry) body.append("buildingFootprintGeometry", JSON.stringify(footprint.geometry));
     body.append("province", payload.province);
     body.append("commune", payload.commune);
     body.append("lat", String(payload.lat));
@@ -591,7 +649,7 @@ export default function ReportScreen({ navigation }) {
     if (submitting || !validate(4)) return;
     setSubmitting(true);
     setApiError("");
-    const payload = { ...form, collectionTime: new Date().toISOString(), offlineCreatedAt: new Date().toISOString() };
+    const payload = { ...form, selectedFootprint, collectionTime: new Date().toISOString(), offlineCreatedAt: new Date().toISOString() };
     try {
       await sendPayload(payload);
       setSuccess({ mode: "sent", payload });
@@ -824,18 +882,45 @@ export default function ReportScreen({ navigation }) {
           <View>
             <ScreenTitle title={tr(form.language, "where")} subtitle={tr(form.language, "whereSub")} />
             <SecondaryButton title={tr(form.language, "gps")} icon="locate-outline" onPress={useCurrentLocation} strong />
-            <SecondaryButton title={tr(form.language, "map")} icon="map-outline" onPress={() => setApiError("Building footprint selection is prepared for the web map; GPS and landmark are ready now.")} />
-            <View style={styles.mapPreview}>
-              <View style={styles.mapLineA} />
-              <View style={styles.mapLineB} />
-              <View style={styles.mapLineC} />
-              <View style={styles.footprintA} />
-              <View style={styles.footprintB} />
-              <View style={styles.footprintC} />
-              <View style={styles.mapPin}>
-                <Ionicons name="location" size={30} color={colors.primary} />
+            <SecondaryButton title="Load building footprints" icon="business-outline" onPress={() => loadFootprints({ lat: form.lat, lng: form.lng })} />
+            <View style={styles.nativeMapWrap}>
+              <MapView
+                style={styles.nativeMap}
+                region={mapRegion}
+                mapType="none"
+                onPress={(event) => updateMapLocation(event.nativeEvent.coordinate)}
+              >
+                <UrlTile urlTemplate="https://tile.openstreetmap.org/{z}/{x}/{y}.png" maximumZ={19} flipY={false} />
+                {footprints.map((footprint) => (
+                  <Polygon
+                    key={footprint.id}
+                    coordinates={footprint.positions}
+                    tappable
+                    strokeColor={selectedFootprint?.id === footprint.id ? colors.primary : "#0f766e"}
+                    fillColor={selectedFootprint?.id === footprint.id ? "rgba(22, 163, 74, 0.28)" : "rgba(15, 118, 110, 0.14)"}
+                    strokeWidth={selectedFootprint?.id === footprint.id ? 3 : 1}
+                    onPress={() => {
+                      setSelectedFootprint(footprint);
+                      setApiError("");
+                    }}
+                  />
+                ))}
+                <Marker coordinate={{ latitude: mapRegion.latitude, longitude: mapRegion.longitude }} pinColor={colors.primary} />
+              </MapView>
+              <View style={styles.footprintBadge}>
+                <Ionicons name="business-outline" size={16} color={colors.primaryDark} />
+                <Text style={styles.footprintBadgeText}>{footprintStatus || "Tap map to move the report pin."}</Text>
               </View>
             </View>
+            {selectedFootprint ? (
+              <View style={styles.selectedFootprint}>
+                <Ionicons name="checkmark-circle" size={20} color={colors.primary} />
+                <View style={styles.selectedFootprintCopy}>
+                  <Text style={styles.selectedFootprintText}>{selectedFootprint.name}</Text>
+                  <Text style={styles.selectedFootprintId}>{selectedFootprint.source} - {selectedFootprint.id}</Text>
+                </View>
+              </View>
+            ) : null}
             <FieldBlock label={tr(form.language, "landmark")}>
               <TextInput
                 value={form.locationDescription}
@@ -1257,83 +1342,65 @@ const styles = StyleSheet.create({
   toggleTextActive: {
     color: colors.primaryDark
   },
-  mapPreview: {
-    backgroundColor: "#edf6f6",
-    borderRadius: 16,
-    height: 176,
+  nativeMapWrap: {
+    backgroundColor: "#e0f2fe",
+    borderColor: colors.border,
+    borderRadius: 18,
+    borderWidth: 1,
+    height: 260,
     marginBottom: 12,
     marginTop: 14,
     overflow: "hidden"
   },
-  mapLineA: {
-    backgroundColor: "#d8e7e8",
-    height: 2,
-    left: -20,
-    position: "absolute",
-    top: 48,
-    transform: [{ rotate: "18deg" }],
-    width: 420
+  nativeMap: {
+    height: "100%",
+    width: "100%"
   },
-  mapLineB: {
-    backgroundColor: "#d8e7e8",
-    height: 2,
-    left: 10,
-    position: "absolute",
-    top: 104,
-    transform: [{ rotate: "-28deg" }],
-    width: 360
-  },
-  mapLineC: {
-    backgroundColor: "#d8e7e8",
-    height: 240,
-    left: 170,
-    position: "absolute",
-    top: -20,
-    width: 2
-  },
-  mapPin: {
-    left: "46%",
-    position: "absolute",
-    top: "40%"
-  },
-  footprintA: {
-    backgroundColor: "#fff",
-    borderColor: "#9ac7c8",
-    borderRadius: 4,
+  footprintBadge: {
+    alignItems: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.94)",
+    borderColor: colors.border,
+    borderRadius: 999,
     borderWidth: 1,
-    height: 34,
-    left: 42,
-    opacity: 0.85,
-    position: "absolute",
-    top: 34,
-    transform: [{ rotate: "8deg" }],
-    width: 58
+    bottom: 12,
+    flexDirection: "row",
+    gap: 7,
+    left: 12,
+    maxWidth: "88%",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    position: "absolute"
   },
-  footprintB: {
-    backgroundColor: "#fff",
-    borderColor: "#9ac7c8",
-    borderRadius: 4,
+  footprintBadgeText: {
+    color: "#0f172a",
+    flexShrink: 1,
+    fontSize: 12,
+    fontWeight: "900"
+  },
+  selectedFootprint: {
+    alignItems: "center",
+    backgroundColor: "#ecfdf5",
+    borderColor: "#bbf7d0",
+    borderRadius: 14,
     borderWidth: 1,
-    height: 44,
-    opacity: 0.85,
-    position: "absolute",
-    right: 52,
-    top: 78,
-    transform: [{ rotate: "-12deg" }],
-    width: 72
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: 12,
+    padding: 12
   },
-  footprintC: {
-    backgroundColor: "#dcfce7",
-    borderColor: colors.primary,
-    borderRadius: 4,
-    borderWidth: 2,
-    height: 42,
-    left: "42%",
-    opacity: 0.95,
-    position: "absolute",
-    top: "42%",
-    transform: [{ rotate: "15deg" }],
-    width: 62
+  selectedFootprintCopy: {
+    flex: 1
+  },
+  selectedFootprintText: {
+    color: colors.primaryDark,
+    fontSize: 13,
+    fontWeight: "900"
+  },
+  selectedFootprintId: {
+    color: colors.muted,
+    fontSize: 11,
+    fontWeight: "800",
+    marginTop: 3
   },
   landmarkInput: {
     minHeight: 82,
