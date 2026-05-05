@@ -13,6 +13,7 @@ import { defaultLocation, provinces } from "../utils/locations";
 
 const initialForm = {
   language: "en",
+  crisisId: "kinshasa-flood-response",
   category: "residential",
   crisisType: "flood",
   damageLevel: "partial",
@@ -365,9 +366,71 @@ const uiText = {
   }
 };
 
+const uiOverrides = {
+  ar: {
+    what: "1. ماذا حدث؟",
+    whatSub: "اختر نوع الحادث.",
+    affected: "البنية التحتية المتضررة",
+    language: "اللغة",
+    photo: "2. أضف صورة",
+    takePhoto: "التقاط صورة",
+    upload: "رفع",
+    describe: "3. صف الوضع",
+    title: "عنوان قصير",
+    details: "الوصف",
+    severity: "مستوى الخطورة",
+    where: "4. أين الموقع؟",
+    gps: "استخدام موقعي",
+    map: "اختيار على الخريطة",
+    landmark: "معلم / وصف الموقع",
+    send: "Send report",
+    thankYou: "شكرا!",
+    savedOffline: "تم الحفظ offline"
+  },
+  zh: {
+    what: "1. 发生了什么？",
+    whatSub: "选择事件类型。",
+    affected: "受影响的基础设施",
+    language: "语言",
+    photo: "2. 添加照片",
+    takePhoto: "拍照",
+    upload: "上传",
+    describe: "3. 描述情况",
+    title: "简短标题",
+    details: "描述",
+    severity: "严重程度",
+    where: "4. 在哪里？",
+    gps: "使用我的位置",
+    map: "在地图上选择",
+    landmark: "地标 / 位置描述",
+    send: "Send report",
+    thankYou: "谢谢！",
+    savedOffline: "已 offline 保存"
+  },
+  ru: {
+    what: "1. Что произошло?",
+    whatSub: "Выберите тип инцидента.",
+    affected: "Пострадавшая инфраструктура",
+    language: "Язык",
+    photo: "2. Добавьте фото",
+    takePhoto: "Сделать фото",
+    upload: "Загрузить",
+    describe: "3. Опишите ситуацию",
+    title: "Краткий заголовок",
+    details: "Описание",
+    severity: "Уровень серьезности",
+    where: "4. Где это?",
+    gps: "Использовать мое местоположение",
+    map: "Выбрать на карте",
+    landmark: "Ориентир / описание места",
+    send: "Send report",
+    thankYou: "Спасибо!",
+    savedOffline: "Сохранено offline"
+  }
+};
+
 function tr(language, key) {
-  const safeLanguage = ["en", "fr", "es"].includes(language) ? language : "en";
-  return (uiText[safeLanguage] || uiText.en)[key] || uiText.en[key] || key;
+  return ({ ...uiText.en, ...(uiText[language] || {}), ...(uiOverrides[language] || {}) })[key] || key;
 }
 
 export default function ReportScreen({ navigation }) {
@@ -501,6 +564,7 @@ export default function ReportScreen({ navigation }) {
     body.append("collectionTime", payload.collectionTime || new Date().toISOString());
     body.append("offlineCreatedAt", payload.offlineCreatedAt || "");
     body.append("appVersion", "mobile-mvp");
+    body.append("crisisId", payload.crisisId || "kinshasa-flood-response");
     body.append("buildingFootprintId", payload.assetId.trim() || `${payload.province}-${payload.commune}-${Number(payload.lat).toFixed(5)}-${Number(payload.lng).toFixed(5)}`);
     body.append("buildingFootprintName", payload.infrastructureName.trim());
     body.append("buildingFootprintSource", payload.assetId.trim() ? "user-provided" : "gps-derived-prototype");
