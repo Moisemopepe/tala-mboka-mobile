@@ -108,17 +108,17 @@ const needsOptions = [
 
 const uiText = {
   en: {
-    what: "1. What happened?",
+    what: "2. What happened?",
     whatSub: "Select the type of incident.",
     affected: "Affected infrastructure",
     language: "Language",
     anonymous: "Your information is anonymous. No personal data is collected.",
-    photo: "2. Add a photo",
+    photo: "3. Add a photo",
     photoSub: "A clear photo helps others understand the situation.",
     takePhoto: "Take a photo",
     upload: "Upload",
     tip: "Tip: photos are compressed before upload to save bandwidth.",
-    describe: "3. Describe the situation",
+    describe: "4. Describe the situation",
     describeSub: "Provide short, clear details.",
     title: "Short title",
     details: "Description",
@@ -130,7 +130,7 @@ const uiText = {
     electricity: "Electricity condition",
     health: "Health services",
     urgentNeeds: "Most pressing needs",
-    where: "4. Where is it?",
+    where: "1. Where is it?",
     whereSub: "Confirm the location of the incident.",
     gps: "Use my location",
     map: "Select on map",
@@ -151,17 +151,17 @@ const uiText = {
     another: "Send another report"
   },
   fr: {
-    what: "1. Que s'est-il passe ?",
+    what: "2. Que s'est-il passe ?",
     whatSub: "Selectionnez le type d'incident.",
     affected: "Infrastructure touchee",
     language: "Langue",
     anonymous: "Vos informations sont anonymes. Aucune donnee personnelle n'est collectee.",
-    photo: "2. Ajouter une photo",
+    photo: "3. Ajouter une photo",
     photoSub: "Une photo claire aide les equipes a comprendre la situation.",
     takePhoto: "Prendre une photo",
     upload: "Importer",
     tip: "Astuce: les photos sont compressees avant l'envoi.",
-    describe: "3. Decrire la situation",
+    describe: "4. Decrire la situation",
     describeSub: "Ajoutez des details courts et clairs.",
     title: "Titre court",
     details: "Description",
@@ -173,7 +173,7 @@ const uiText = {
     electricity: "Etat de l'electricite",
     health: "Services de sante",
     urgentNeeds: "Besoins les plus urgents",
-    where: "4. Ou est-ce ?",
+    where: "1. Ou est-ce ?",
     whereSub: "Confirmez le lieu de l'incident.",
     gps: "Utiliser ma position",
     map: "Selectionner sur la carte",
@@ -194,17 +194,17 @@ const uiText = {
     another: "Envoyer un autre signalement"
   },
   es: {
-    what: "1. Que ocurrio?",
+    what: "2. Que ocurrio?",
     whatSub: "Seleccione el tipo de incidente.",
     affected: "Infraestructura afectada",
     language: "Idioma",
     anonymous: "Su informacion es anonima. No se recopilan datos personales.",
-    photo: "2. Agregar una foto",
+    photo: "3. Agregar una foto",
     photoSub: "Una foto clara ayuda a entender la situacion.",
     takePhoto: "Tomar foto",
     upload: "Subir",
     tip: "Consejo: las fotos se comprimen antes del envio.",
-    describe: "3. Describa la situacion",
+    describe: "4. Describa la situacion",
     describeSub: "Proporcione detalles breves y claros.",
     title: "Titulo corto",
     details: "Descripcion",
@@ -216,7 +216,7 @@ const uiText = {
     electricity: "Estado electrico",
     health: "Servicios de salud",
     urgentNeeds: "Necesidades urgentes",
-    where: "4. Donde esta?",
+    where: "1. Donde esta?",
     whereSub: "Confirme la ubicacion del incidente.",
     gps: "Usar mi ubicacion",
     map: "Seleccionar en mapa",
@@ -461,7 +461,7 @@ export default function ReportScreen({ navigation }) {
   }, []);
 
   useEffect(() => {
-    if (step === 4) {
+    if (step === 1) {
       loadFootprints({ lat: form.lat, lng: form.lng });
     }
   }, [step, form.lat, form.lng]);
@@ -541,13 +541,13 @@ export default function ReportScreen({ navigation }) {
 
   function validate(targetStep = step) {
     const nextErrors = {};
-    if (targetStep >= 1 && !form.crisisType) nextErrors.crisisType = "Select the incident type.";
-    if (targetStep >= 2 && !form.image) nextErrors.image = "Add a photo of the damaged infrastructure.";
-    if (targetStep >= 3) {
+    if (targetStep >= 1 && (!form.lat || !form.lng)) nextErrors.location = "Confirm a location.";
+    if (targetStep >= 2 && !form.crisisType) nextErrors.crisisType = "Select the incident type.";
+    if (targetStep >= 3 && !form.image) nextErrors.image = "Add a photo of the damaged infrastructure.";
+    if (targetStep >= 4) {
       if (!form.title.trim() || form.title.trim().length < 3) nextErrors.title = "Add a short title.";
       if (!form.description.trim() || form.description.trim().length < 10) nextErrors.description = "Add at least 10 characters.";
     }
-    if (targetStep >= 4 && (!form.lat || !form.lng)) nextErrors.location = "Confirm a location.";
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
   }
@@ -774,7 +774,7 @@ export default function ReportScreen({ navigation }) {
       ) : null}
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {step === 1 ? (
+        {step === 2 ? (
           <View>
             <ScreenTitle title={tr(form.language, "what")} subtitle={tr(form.language, "whatSub")} />
             <Text style={styles.smallLabel}>{tr(form.language, "language")}</Text>
@@ -802,7 +802,7 @@ export default function ReportScreen({ navigation }) {
           </View>
         ) : null}
 
-        {step === 2 ? (
+        {step === 3 ? (
           <View>
             <ScreenTitle title={tr(form.language, "photo")} subtitle={tr(form.language, "photoSub")} />
             <Pressable style={styles.photoBox} onPress={() => choosePhoto("camera")}>
@@ -831,7 +831,7 @@ export default function ReportScreen({ navigation }) {
           </View>
         ) : null}
 
-        {step === 3 ? (
+        {step === 4 ? (
           <View>
             <ScreenTitle title={tr(form.language, "describe")} subtitle={tr(form.language, "describeSub")} />
             <FieldBlock label={tr(form.language, "title")} error={errors.title}>
@@ -902,11 +902,12 @@ export default function ReportScreen({ navigation }) {
               <ToggleRow label="Livelihoods affected" value={form.livelihoodsAffected} onPress={() => update("livelihoodsAffected", !form.livelihoodsAffected)} />
               <ToggleRow label="People at risk" value={form.peopleAtRisk} onPress={() => update("peopleAtRisk", !form.peopleAtRisk)} />
             </View>
-            <PrimaryButton title={tr(form.language, "next")} icon="arrow-forward" onPress={nextStep} />
+            <PrimaryButton title={submitting ? "Sending..." : tr(form.language, "send")} icon="paper-plane-outline" onPress={submit} disabled={submitting} />
+            <Text style={styles.offlineNote}>{tr(form.language, "offline")}</Text>
           </View>
         ) : null}
 
-        {step === 4 ? (
+        {step === 1 ? (
           <View>
             <ScreenTitle title={tr(form.language, "where")} subtitle={tr(form.language, "whereSub")} />
             <SecondaryButton title={tr(form.language, "gps")} icon="locate-outline" onPress={useCurrentLocation} strong />
@@ -988,8 +989,7 @@ export default function ReportScreen({ navigation }) {
               ))}
             </ScrollView>
             {errors.location ? <Text style={styles.fieldError}>{errors.location}</Text> : null}
-            <PrimaryButton title={submitting ? "Sending..." : tr(form.language, "send")} icon="paper-plane-outline" onPress={submit} disabled={submitting} />
-            <Text style={styles.offlineNote}>{tr(form.language, "offline")}</Text>
+            <PrimaryButton title={tr(form.language, "next")} icon="arrow-forward" onPress={nextStep} />
           </View>
         ) : null}
       </ScrollView>
