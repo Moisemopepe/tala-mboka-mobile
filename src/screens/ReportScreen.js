@@ -8,6 +8,7 @@ import { useAuth } from "../context/AuthContext";
 import { api } from "../services/api";
 import { listOfflineReports, saveOfflineReport, syncOfflineReports } from "../services/offlineQueue";
 import { colors } from "../theme";
+import { resolveAdministrativeArea } from "../utils/adminArea";
 import { createFootprintsAround, fetchOsmBuildings } from "../utils/buildingFootprints";
 import { categories } from "../utils/categories";
 import { defaultLocation, provinces } from "../utils/locations";
@@ -447,8 +448,9 @@ export default function ReportScreen({ navigation }) {
   const [selectedFootprint, setSelectedFootprint] = useState(null);
   const [footprintStatus, setFootprintStatus] = useState("");
   const [mapSize, setMapSize] = useState({ width: 0, height: 0 });
-  const provinceNames = Object.keys(provinces);
-  const communeOptions = provinces[form.province] || [];
+  const [dynamicArea, setDynamicArea] = useState(null);
+  const provinceNames = Array.from(new Set([form.province, ...Object.keys(provinces)].filter(Boolean)));
+  const communeOptions = Array.from(new Set([form.commune, ...(provinces[form.province] || [])].filter(Boolean)));
   const mapRegion = {
     latitude: Number(form.lat) || defaultLocation.lat,
     longitude: Number(form.lng) || defaultLocation.lng,
@@ -509,6 +511,23 @@ export default function ReportScreen({ navigation }) {
     }));
     setErrors((current) => ({ ...current, location: "" }));
     setApiError("");
+    resolveAreaForCoordinate(coordinate).catch(() => {});
+  }
+
+  async function resolveAreaForCoordinate(coordinate) {
+    try {
+      const area = await resolveAdministrativeArea({ ...coordinate, language: form.language });
+      if (!area?.province && !area?.commune) return;
+      setDynamicArea(area);
+      setForm((current) => ({
+        ...current,
+        province: area.province || current.province,
+        commune: area.commune || current.commune,
+        locationDescription: current.locationDescription || area.addressText || ""
+      }));
+    } catch (_error) {
+      setDynamicArea(null);
+    }
   }
 
   function updateLocationFromCanvas(event) {
@@ -619,6 +638,7 @@ export default function ReportScreen({ navigation }) {
       lat: current.coords.latitude,
       lng: current.coords.longitude
     }));
+    await resolveAreaForCoordinate({ latitude: current.coords.latitude, longitude: current.coords.longitude });
     await loadFootprints({ lat: current.coords.latitude, lng: current.coords.longitude });
   }
 
@@ -658,7 +678,7 @@ export default function ReportScreen({ navigation }) {
     body.append("commune", payload.commune);
     body.append("lat", String(payload.lat));
     body.append("lng", String(payload.lng));
-    body.append("address", payload.locationDescription.trim() || `${payload.commune}, ${payload.province}`);
+    body.append("address", payload.locationDescription.trim() || payload.dynamicArea?.addressText || `${payload.commune}, ${payload.province}`);
     if (payload.image) {
       body.append("images", {
         uri: payload.image.uri,
@@ -677,7 +697,7 @@ export default function ReportScreen({ navigation }) {
     if (submitting || !validate(4)) return;
     setSubmitting(true);
     setApiError("");
-    const payload = { ...form, selectedFootprint, collectionTime: new Date().toISOString(), offlineCreatedAt: new Date().toISOString() };
+    const payload = { ...form, selectedFootprint, dynamicArea, collectionTime: new Date().toISOString(), offlineCreatedAt: new Date().toISOString() };
     try {
       await sendPayload(payload);
       setSuccess({ mode: "sent", payload });
@@ -974,6 +994,7 @@ export default function ReportScreen({ navigation }) {
               <View>
                 <Text style={styles.coordLabel}>Coordinates</Text>
                 <Text style={styles.coordValue}>{Number(form.lat).toFixed(5)}, {Number(form.lng).toFixed(5)}</Text>
+                {dynamicArea?.country ? <Text style={styles.coordArea}>{dynamicArea.country}</Text> : null}
               </View>
               <Text style={styles.editText}>Ready</Text>
             </View>
@@ -1533,6 +1554,12 @@ const styles = StyleSheet.create({
     color: "#071a4f",
     fontSize: 15,
     fontWeight: "900"
+  },
+  coordArea: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: "800",
+    marginTop: 4
   },
   editText: {
     color: colors.primaryDark,
