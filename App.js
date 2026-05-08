@@ -21,7 +21,69 @@ function LogoMark() {
   );
 }
 
-function MobileHome({ onReport }) {
+const homeLanguages = [
+  { key: "en", label: "English" },
+  { key: "fr", label: "Français" },
+  { key: "es", label: "Español" },
+  { key: "ar", label: "العربية" },
+  { key: "zh", label: "中文" },
+  { key: "ru", label: "Русский" }
+];
+
+const homeCopy = {
+  en: {
+    title: "Report incidents",
+    accent: "instantly",
+    subtitle: "Your report helps communities and responders act faster.",
+    report: "Report incident",
+    offline: "Works offline",
+    noAccount: "No account required"
+  },
+  fr: {
+    title: "Signalez les incidents",
+    accent: "rapidement",
+    subtitle: "Votre signalement aide les communautés et les équipes à agir plus vite.",
+    report: "Signaler un incident",
+    offline: "Fonctionne hors ligne",
+    noAccount: "Aucun compte requis"
+  },
+  es: {
+    title: "Reporta incidentes",
+    accent: "al instante",
+    subtitle: "Tu reporte ayuda a la comunidad y a los equipos a actuar más rápido.",
+    report: "Reportar incidente",
+    offline: "Funciona sin conexión",
+    noAccount: "Sin cuenta requerida"
+  },
+  ar: {
+    title: "أبلغ عن الحوادث",
+    accent: "فورا",
+    subtitle: "يساعد بلاغك المجتمعات وفرق الاستجابة على التحرك بسرعة.",
+    report: "إبلاغ عن حادث",
+    offline: "يعمل دون اتصال",
+    noAccount: "لا يتطلب حسابا"
+  },
+  zh: {
+    title: "报告事件",
+    accent: "即时",
+    subtitle: "你的报告帮助社区和响应人员更快行动。",
+    report: "报告事件",
+    offline: "支持离线",
+    noAccount: "无需账户"
+  },
+  ru: {
+    title: "Сообщайте об инцидентах",
+    accent: "быстро",
+    subtitle: "Ваше сообщение помогает сообществам и службам реагировать быстрее.",
+    report: "Сообщить об инциденте",
+    offline: "Работает офлайн",
+    noAccount: "Аккаунт не нужен"
+  }
+};
+
+function MobileHome({ language, onLanguageChange, onReport }) {
+  const copy = homeCopy[language] || homeCopy.en;
+
   return (
     <SafeAreaView style={styles.home}>
       <StatusBar style="dark" />
@@ -33,26 +95,39 @@ function MobileHome({ onReport }) {
         </View>
 
         <View style={styles.copy}>
-          <Text style={styles.title}>Report incidents</Text>
-          <Text style={styles.titleAccent}>instantly</Text>
-          <Text style={styles.subtitle}>Your report helps communities and responders act faster.</Text>
+          <Text style={styles.title}>{copy.title}</Text>
+          <Text style={styles.titleAccent}>{copy.accent}</Text>
+          <Text style={styles.subtitle}>{copy.subtitle}</Text>
+        </View>
+
+        <View style={styles.languageRow}>
+          {homeLanguages.map((item) => (
+            <Pressable
+              key={item.key}
+              accessibilityRole="button"
+              onPress={() => onLanguageChange(item.key)}
+              style={[styles.languageChip, language === item.key && styles.languageChipActive]}
+            >
+              <Text style={[styles.languageText, language === item.key && styles.languageTextActive]}>{item.label}</Text>
+            </Pressable>
+          ))}
         </View>
 
         <Pressable accessibilityRole="button" onPress={onReport} style={({ pressed }) => [styles.reportButton, pressed && styles.pressed]}>
           <Ionicons name="add" size={72} color="#fff" />
         </Pressable>
-        <Text style={styles.reportLabel}>Report incident</Text>
+        <Text style={styles.reportLabel}>{copy.report}</Text>
       </View>
 
       <View style={styles.footer}>
         <View style={styles.footerItem}>
           <Ionicons name="cloud-offline-outline" size={16} color={colors.muted} />
-          <Text style={styles.footerText}>Works offline</Text>
+          <Text style={styles.footerText}>{copy.offline}</Text>
         </View>
         <View style={styles.divider} />
         <View style={styles.footerItem}>
           <Ionicons name="lock-closed-outline" size={16} color={colors.muted} />
-          <Text style={styles.footerText}>No account required</Text>
+          <Text style={styles.footerText}>{copy.noAccount}</Text>
         </View>
       </View>
     </SafeAreaView>
@@ -61,13 +136,14 @@ function MobileHome({ onReport }) {
 
 function AppShell() {
   const [showReport, setShowReport] = useState(false);
+  const [language, setLanguage] = useState("fr");
   const navigation = { navigate: () => setShowReport(false), goBack: () => setShowReport(false) };
 
   if (showReport) {
-    return <ReportScreen navigation={navigation} />;
+    return <ReportScreen navigation={navigation} initialLanguage={language} />;
   }
 
-  return <MobileHome onReport={() => setShowReport(true)} />;
+  return <MobileHome language={language} onLanguageChange={setLanguage} onReport={() => setShowReport(true)} />;
 }
 
 export default function App() {
@@ -204,6 +280,33 @@ const styles = StyleSheet.create({
     marginTop: 18,
     maxWidth: 260,
     textAlign: "center"
+  },
+  languageRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    justifyContent: "center",
+    marginBottom: 24,
+    maxWidth: 310
+  },
+  languageChip: {
+    borderColor: colors.border,
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 7
+  },
+  languageChipActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary
+  },
+  languageText: {
+    color: colors.muted,
+    fontSize: 11,
+    fontWeight: "900"
+  },
+  languageTextActive: {
+    color: "#fff"
   },
   reportButton: {
     alignItems: "center",

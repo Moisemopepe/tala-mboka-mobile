@@ -44,6 +44,10 @@ const initialForm = {
   image: null
 };
 
+function initialFormForLanguage(language = "en") {
+  return { ...initialForm, language };
+}
+
 const incidents = [
   { key: "flood", label: "Flood", icon: "water-outline", color: "#60a5fa" },
   { key: "earthquake", label: "Earthquake", icon: "pulse-outline", color: "#ef4444" },
@@ -65,11 +69,11 @@ const severity = [
 
 const languages = [
   { key: "en", label: "English" },
-  { key: "fr", label: "Francais" },
-  { key: "es", label: "Espanol" },
-  { key: "ar", label: "Arabic" },
-  { key: "zh", label: "Chinese" },
-  { key: "ru", label: "Russian" }
+  { key: "fr", label: "Français" },
+  { key: "es", label: "Español" },
+  { key: "ar", label: "العربية" },
+  { key: "zh", label: "中文" },
+  { key: "ru", label: "Русский" }
 ];
 
 const debrisOptions = [
@@ -113,14 +117,14 @@ const uiText = {
     whatSub: "Select the type of incident.",
     affected: "Affected infrastructure",
     language: "Language",
-    anonymous: "Your information is anonymous. No personal data is collected.",
+    anonymous: "Reporter contact is optional and visible only to authorized admins.",
     photo: "3. Add a photo",
-    photoSub: "A clear photo helps others understand the situation.",
+    photoSub: "A clear photo helps responders validate the situation.",
     takePhoto: "Take a photo",
     upload: "Upload",
     tip: "Tip: photos are compressed before upload to save bandwidth.",
     describe: "4. Describe the situation",
-    describeSub: "Provide short, clear details.",
+    describeSub: "Provide short, clear, factual details.",
     title: "Short title",
     details: "Description",
     infraName: "Infrastructure name",
@@ -152,104 +156,104 @@ const uiText = {
     another: "Send another report"
   },
   fr: {
-    what: "2. Que s'est-il passe ?",
-    whatSub: "Selectionnez le type d'incident.",
-    affected: "Infrastructure touchee",
+    what: "2. Que s'est-il passé ?",
+    whatSub: "Sélectionnez le type d'incident.",
+    affected: "Infrastructure touchée",
     language: "Langue",
-    anonymous: "Vos informations sont anonymes. Aucune donnee personnelle n'est collectee.",
+    anonymous: "Le contact du signaleur est optionnel et visible seulement par les admins autorisés.",
     photo: "3. Ajouter une photo",
-    photoSub: "Une photo claire aide les equipes a comprendre la situation.",
+    photoSub: "Une photo claire aide les équipes à valider la situation.",
     takePhoto: "Prendre une photo",
     upload: "Importer",
-    tip: "Astuce: les photos sont compressees avant l'envoi.",
-    describe: "4. Decrire la situation",
-    describeSub: "Ajoutez des details courts et clairs.",
+    tip: "Astuce: les photos sont compressées avant l'envoi.",
+    describe: "4. Décrire la situation",
+    describeSub: "Ajoutez des détails courts, clairs et factuels.",
     title: "Titre court",
     details: "Description",
     infraName: "Nom de l'infrastructure",
-    buildingId: "ID batiment ou asset",
-    severity: "Niveau de gravite",
+    buildingId: "ID bâtiment ou asset",
+    severity: "Niveau de gravité",
     more: "Impact communautaire",
-    debris: "Debris sur le site",
-    electricity: "Etat de l'electricite",
-    health: "Services de sante",
+    debris: "Débris sur le site",
+    electricity: "État de l'électricité",
+    health: "Services de santé",
     urgentNeeds: "Besoins les plus urgents",
-    where: "1. Ou est-ce ?",
+    where: "1. Où est-ce ?",
     whereSub: "Confirmez le lieu de l'incident.",
     gps: "Utiliser ma position",
-    map: "Selectionner sur la carte",
-    landmark: "Repere / description du lieu",
+    map: "Sélectionner sur la carte",
+    landmark: "Repère / description du lieu",
     area: "Zone",
-    send: "Send report",
+    send: "Envoyer le rapport",
     next: "Suivant",
     offline: "Fonctionne hors ligne. Synchronisation automatique.",
     thankYou: "Merci !",
-    savedOffline: "Enregistre hors ligne",
-    sentText: "Votre signalement a ete envoye. Il aide a proteger les communautes.",
-    offlineText: "Votre signalement sera synchronise quand la connexion revient.",
-    summary: "Resume du signalement",
+    savedOffline: "Enregistré hors ligne",
+    sentText: "Votre signalement a été envoyé. Il aide à protéger les communautés.",
+    offlineText: "Votre signalement sera synchronisé quand la connexion revient.",
+    summary: "Résumé du signalement",
     type: "Type",
-    status: "Gravite",
+    status: "Gravité",
     location: "Localisation",
     backHome: "Accueil",
     another: "Envoyer un autre signalement"
   },
   es: {
-    what: "2. Que ocurrio?",
+    what: "2. ¿Qué ocurrió?",
     whatSub: "Seleccione el tipo de incidente.",
     affected: "Infraestructura afectada",
     language: "Idioma",
-    anonymous: "Su informacion es anonima. No se recopilan datos personales.",
+    anonymous: "El contacto del reportante es opcional y solo visible para administradores autorizados.",
     photo: "3. Agregar una foto",
-    photoSub: "Una foto clara ayuda a entender la situacion.",
+    photoSub: "Una foto clara ayuda a validar la situación.",
     takePhoto: "Tomar foto",
     upload: "Subir",
-    tip: "Consejo: las fotos se comprimen antes del envio.",
-    describe: "4. Describa la situacion",
-    describeSub: "Proporcione detalles breves y claros.",
-    title: "Titulo corto",
-    details: "Descripcion",
+    tip: "Consejo: las fotos se comprimen antes del envío.",
+    describe: "4. Describa la situación",
+    describeSub: "Proporcione detalles breves, claros y factuales.",
+    title: "Título corto",
+    details: "Descripción",
     infraName: "Nombre de infraestructura",
     buildingId: "ID de edificio o activo",
     severity: "Nivel de gravedad",
     more: "Impacto comunitario",
     debris: "Escombros en el sitio",
-    electricity: "Estado electrico",
+    electricity: "Estado eléctrico",
     health: "Servicios de salud",
     urgentNeeds: "Necesidades urgentes",
-    where: "1. Donde esta?",
-    whereSub: "Confirme la ubicacion del incidente.",
-    gps: "Usar mi ubicacion",
+    where: "1. ¿Dónde está?",
+    whereSub: "Confirme la ubicación del incidente.",
+    gps: "Usar mi ubicación",
     map: "Seleccionar en mapa",
-    landmark: "Referencia / descripcion del lugar",
-    area: "Area",
-    send: "Send report",
+    landmark: "Referencia / descripción del lugar",
+    area: "Área",
+    send: "Enviar reporte",
     next: "Siguiente",
-    offline: "Funciona sin conexion. Se sincroniza automaticamente.",
-    thankYou: "Gracias!",
-    savedOffline: "Guardado sin conexion",
+    offline: "Funciona sin conexión. Se sincroniza automáticamente.",
+    thankYou: "¡Gracias!",
+    savedOffline: "Guardado sin conexión",
     sentText: "Su reporte fue enviado. Ayuda a proteger comunidades.",
-    offlineText: "Su reporte se sincronizara cuando vuelva la conexion.",
+    offlineText: "Su reporte se sincronizará cuando vuelva la conexión.",
     summary: "Resumen del reporte",
     type: "Tipo",
     status: "Gravedad",
-    location: "Ubicacion",
+    location: "Ubicación",
     backHome: "Inicio",
     another: "Enviar otro reporte"
   },
   ar: {
-    what: "1. ماذا حدث؟",
+    what: "2. ماذا حدث؟",
     whatSub: "اختر نوع الحادث.",
     affected: "البنية التحتية المتضررة",
     language: "اللغة",
-    anonymous: "معلوماتك مجهولة. لا يتم جمع بيانات شخصية.",
-    photo: "2. أضف صورة",
-    photoSub: "الصورة الواضحة تساعد فرق الاستجابة على فهم الوضع.",
+    anonymous: "معلومات الاتصال اختيارية ومرئية فقط للمسؤولين المصرح لهم.",
+    photo: "3. أضف صورة",
+    photoSub: "الصورة الواضحة تساعد فرق الاستجابة على التحقق من الوضع.",
     takePhoto: "التقاط صورة",
     upload: "رفع صورة",
     tip: "نصيحة: يتم ضغط الصور قبل الإرسال لتقليل استهلاك البيانات.",
-    describe: "3. صف الوضع",
-    describeSub: "قدم تفاصيل قصيرة وواضحة.",
+    describe: "4. صف الوضع",
+    describeSub: "قدم تفاصيل قصيرة وواضحة وواقعية.",
     title: "عنوان قصير",
     details: "الوصف",
     infraName: "اسم البنية التحتية",
@@ -260,13 +264,13 @@ const uiText = {
     electricity: "حالة الكهرباء",
     health: "الخدمات الصحية",
     urgentNeeds: "الاحتياجات الأكثر إلحاحا",
-    where: "4. أين الموقع؟",
+    where: "1. أين الموقع؟",
     whereSub: "أكد موقع الحادث.",
     gps: "استخدم موقعي",
     map: "اختر على الخريطة",
     landmark: "معلم / وصف الموقع",
     area: "المنطقة",
-    send: "Send report",
+    send: "إرسال البلاغ",
     next: "التالي",
     offline: "يعمل دون اتصال. ستتم المزامنة تلقائيا.",
     thankYou: "شكرا!",
@@ -281,18 +285,18 @@ const uiText = {
     another: "إرسال بلاغ آخر"
   },
   zh: {
-    what: "1. 发生了什么？",
+    what: "2. 发生了什么？",
     whatSub: "选择事件类型。",
     affected: "受影响的基础设施",
     language: "语言",
-    anonymous: "您的信息是匿名的。不会收集个人数据。",
-    photo: "2. 添加照片",
-    photoSub: "清晰的照片有助于救援人员了解情况。",
+    anonymous: "报告人联系方式为选填，仅授权管理员可见。",
+    photo: "3. 添加照片",
+    photoSub: "清晰的照片有助于救援人员核实情况。",
     takePhoto: "拍照",
     upload: "上传",
     tip: "提示：照片会在上传前压缩以节省流量。",
-    describe: "3. 描述情况",
-    describeSub: "请提供简短、清晰的细节。",
+    describe: "4. 描述情况",
+    describeSub: "请提供简短、清晰、真实的细节。",
     title: "简短标题",
     details: "描述",
     infraName: "基础设施名称",
@@ -303,13 +307,13 @@ const uiText = {
     electricity: "电力状况",
     health: "卫生服务",
     urgentNeeds: "最紧急需求",
-    where: "4. 在哪里？",
+    where: "1. 在哪里？",
     whereSub: "确认事件地点。",
     gps: "使用我的位置",
     map: "在地图上选择",
     landmark: "地标 / 位置描述",
     area: "区域",
-    send: "Send report",
+    send: "提交报告",
     next: "下一步",
     offline: "可离线使用。将自动同步。",
     thankYou: "谢谢！",
@@ -324,35 +328,35 @@ const uiText = {
     another: "提交另一份报告"
   },
   ru: {
-    what: "1. Что произошло?",
+    what: "2. Что произошло?",
     whatSub: "Выберите тип происшествия.",
     affected: "Пострадавшая инфраструктура",
     language: "Язык",
-    anonymous: "Информация анонимна. Персональные данные не собираются.",
-    photo: "2. Добавьте фото",
-    photoSub: "Четкое фото помогает службам понять ситуацию.",
+    anonymous: "Контакт заявителя необязателен и виден только авторизованным администраторам.",
+    photo: "3. Добавьте фото",
+    photoSub: "Четкое фото помогает службам проверить ситуацию.",
     takePhoto: "Сделать фото",
     upload: "Загрузить",
     tip: "Совет: фотографии сжимаются перед отправкой.",
-    describe: "3. Опишите ситуацию",
-    describeSub: "Укажите краткие и понятные детали.",
+    describe: "4. Опишите ситуацию",
+    describeSub: "Укажите краткие, ясные и фактические детали.",
     title: "Краткий заголовок",
     details: "Описание",
     infraName: "Название инфраструктуры",
     buildingId: "ID здания или объекта",
-    severity: "Уровень ущерба",
+    severity: "Уровень серьезности",
     more: "Влияние на сообщество",
     debris: "Завалы на месте",
     electricity: "Состояние электроснабжения",
     health: "Медицинские услуги",
     urgentNeeds: "Самые срочные потребности",
-    where: "4. Где это?",
+    where: "1. Где это?",
     whereSub: "Подтвердите местоположение происшествия.",
     gps: "Использовать мое местоположение",
     map: "Выбрать на карте",
     landmark: "Ориентир / описание места",
     area: "Район",
-    send: "Send report",
+    send: "Отправить отчет",
     next: "Далее",
     offline: "Работает офлайн. Синхронизация будет автоматической.",
     thankYou: "Спасибо!",
@@ -361,7 +365,7 @@ const uiText = {
     offlineText: "Ваш отчет синхронизируется при восстановлении связи.",
     summary: "Сводка отчета",
     type: "Тип",
-    status: "Ущерб",
+    status: "Серьезность",
     location: "Местоположение",
     backHome: "На главную",
     another: "Отправить еще один отчет"
@@ -369,76 +373,124 @@ const uiText = {
 };
 
 const uiOverrides = {
+  en: {
+    uploadHint: "or upload from gallery",
+    titlePlaceholder: "E.g. bridge partially damaged",
+    infraPlaceholder: "E.g. central market bridge",
+    assetPlaceholder: "Optional building footprint or local ID",
+    sending: "Sending...",
+    loadFootprints: "Load building footprints",
+    footprintLoading: "Loading OSM building footprints...",
+    footprintLoaded: "OSM buildings loaded. Tap a footprint to attach it.",
+    footprintNone: "No OSM building found nearby. Offline selectable grid is available.",
+    footprintUnavailable: "OSM is unavailable now. Offline selectable grid is available.",
+    landmarkPlaceholder: "E.g. school near the central market",
+    coordinates: "Coordinates",
+    ready: "Ready",
+    titleError: "Add a short title.",
+    descriptionError: "Add at least 10 characters.",
+    stillOffline: "report(s) still offline. They will sync when the connection returns."
+  },
+  fr: {
+    uploadHint: "ou importer depuis la galerie",
+    titlePlaceholder: "Ex. pont partiellement endommagé",
+    infraPlaceholder: "Ex. pont du marché central",
+    assetPlaceholder: "Empreinte bâtiment ou ID local optionnel",
+    sending: "Envoi...",
+    loadFootprints: "Charger les empreintes bâtiment",
+    footprintLoading: "Chargement des bâtiments OSM...",
+    footprintLoaded: "bâtiments OSM chargés. Touchez une empreinte pour l'attacher.",
+    footprintNone: "Aucun bâtiment OSM proche. La grille hors ligne reste disponible.",
+    footprintUnavailable: "OSM est indisponible. La grille hors ligne reste disponible.",
+    landmarkPlaceholder: "Ex. école près du marché central",
+    coordinates: "Coordonnées",
+    ready: "Prêt",
+    titleError: "Ajoutez un titre court.",
+    descriptionError: "Ajoutez au moins 10 caractères.",
+    stillOffline: "signalement(s) encore hors ligne. Ils seront synchronisés au retour de la connexion."
+  },
+  es: {
+    uploadHint: "o subir desde la galería",
+    titlePlaceholder: "Ej. puente parcialmente dañado",
+    infraPlaceholder: "Ej. puente del mercado central",
+    assetPlaceholder: "Huella de edificio o ID local opcional",
+    sending: "Enviando...",
+    loadFootprints: "Cargar huellas de edificios",
+    footprintLoading: "Cargando edificios OSM...",
+    footprintLoaded: "edificios OSM cargados. Toca una huella para adjuntarla.",
+    footprintNone: "No se encontró un edificio OSM cercano. La cuadrícula offline está disponible.",
+    footprintUnavailable: "OSM no está disponible. La cuadrícula offline está disponible.",
+    landmarkPlaceholder: "Ej. escuela cerca del mercado central",
+    coordinates: "Coordenadas",
+    ready: "Listo",
+    titleError: "Agrega un título corto.",
+    descriptionError: "Agrega al menos 10 caracteres.",
+    stillOffline: "reporte(s) siguen offline. Se sincronizarán cuando vuelva la conexión."
+  },
   ar: {
-    what: "1. ماذا حدث؟",
-    whatSub: "اختر نوع الحادث.",
-    affected: "البنية التحتية المتضررة",
-    language: "اللغة",
-    photo: "2. أضف صورة",
-    takePhoto: "التقاط صورة",
-    upload: "رفع",
-    describe: "3. صف الوضع",
-    title: "عنوان قصير",
-    details: "الوصف",
-    severity: "مستوى الخطورة",
-    where: "4. أين الموقع؟",
-    gps: "استخدام موقعي",
-    map: "اختيار على الخريطة",
-    landmark: "معلم / وصف الموقع",
-    send: "Send report",
-    thankYou: "شكرا!",
-    savedOffline: "تم الحفظ offline"
+    uploadHint: "أو ارفع من المعرض",
+    titlePlaceholder: "مثال: جسر متضرر جزئيا",
+    infraPlaceholder: "مثال: جسر السوق المركزي",
+    assetPlaceholder: "بصمة مبنى أو معرف محلي اختياري",
+    sending: "جار الإرسال...",
+    loadFootprints: "تحميل بصمات المباني",
+    footprintLoading: "جار تحميل مباني OSM...",
+    footprintLoaded: "مبان OSM محملة. المس بصمة لإرفاقها.",
+    footprintNone: "لا يوجد مبنى OSM قريب. الشبكة دون اتصال متاحة.",
+    footprintUnavailable: "OSM غير متاح الآن. الشبكة دون اتصال متاحة.",
+    landmarkPlaceholder: "مثال: مدرسة قرب السوق المركزي",
+    coordinates: "الإحداثيات",
+    ready: "جاهز",
+    titleError: "أضف عنوانا قصيرا.",
+    descriptionError: "أضف 10 أحرف على الأقل.",
+    stillOffline: "بلاغ/بلاغات لا تزال دون اتصال. ستتزامن عند عودة الاتصال."
   },
   zh: {
-    what: "1. 发生了什么？",
-    whatSub: "选择事件类型。",
-    affected: "受影响的基础设施",
-    language: "语言",
-    photo: "2. 添加照片",
-    takePhoto: "拍照",
-    upload: "上传",
-    describe: "3. 描述情况",
-    title: "简短标题",
-    details: "描述",
-    severity: "严重程度",
-    where: "4. 在哪里？",
-    gps: "使用我的位置",
-    map: "在地图上选择",
-    landmark: "地标 / 位置描述",
-    send: "Send report",
-    thankYou: "谢谢！",
-    savedOffline: "已 offline 保存"
+    uploadHint: "或从相册上传",
+    titlePlaceholder: "例如：桥梁部分损坏",
+    infraPlaceholder: "例如：中央市场桥",
+    assetPlaceholder: "可选建筑轮廓或本地 ID",
+    sending: "正在发送...",
+    loadFootprints: "加载建筑轮廓",
+    footprintLoading: "正在加载 OSM 建筑...",
+    footprintLoaded: "个 OSM 建筑已加载。点击轮廓进行关联。",
+    footprintNone: "附近没有 OSM 建筑。离线可选网格可用。",
+    footprintUnavailable: "OSM 当前不可用。离线可选网格可用。",
+    landmarkPlaceholder: "例如：中央市场附近学校",
+    coordinates: "坐标",
+    ready: "就绪",
+    titleError: "添加简短标题。",
+    descriptionError: "至少添加 10 个字符。",
+    stillOffline: "个报告仍离线。连接恢复后会同步。"
   },
   ru: {
-    what: "1. Что произошло?",
-    whatSub: "Выберите тип инцидента.",
-    affected: "Пострадавшая инфраструктура",
-    language: "Язык",
-    photo: "2. Добавьте фото",
-    takePhoto: "Сделать фото",
-    upload: "Загрузить",
-    describe: "3. Опишите ситуацию",
-    title: "Краткий заголовок",
-    details: "Описание",
-    severity: "Уровень серьезности",
-    where: "4. Где это?",
-    gps: "Использовать мое местоположение",
-    map: "Выбрать на карте",
-    landmark: "Ориентир / описание места",
-    send: "Send report",
-    thankYou: "Спасибо!",
-    savedOffline: "Сохранено offline"
+    uploadHint: "или загрузите из галереи",
+    titlePlaceholder: "Напр. мост частично поврежден",
+    infraPlaceholder: "Напр. мост у центрального рынка",
+    assetPlaceholder: "Контур здания или локальный ID, необязательно",
+    sending: "Отправка...",
+    loadFootprints: "Загрузить контуры зданий",
+    footprintLoading: "Загрузка зданий OSM...",
+    footprintLoaded: "зданий OSM загружено. Нажмите контур, чтобы прикрепить.",
+    footprintNone: "Поблизости нет здания OSM. Доступна офлайн-сетка.",
+    footprintUnavailable: "OSM сейчас недоступен. Доступна офлайн-сетка.",
+    landmarkPlaceholder: "Напр. школа возле центрального рынка",
+    coordinates: "Координаты",
+    ready: "Готово",
+    titleError: "Добавьте короткий заголовок.",
+    descriptionError: "Добавьте минимум 10 символов.",
+    stillOffline: "сообщений еще офлайн. Они синхронизируются после подключения."
   }
 };
 
 function tr(language, key) {
-  return ({ ...uiText.en, ...(uiText[language] || {}), ...(uiOverrides[language] || {}) })[key] || key;
+  return ({ ...uiText.en, ...uiOverrides.en, ...(uiText[language] || {}), ...(uiOverrides[language] || {}) })[key] || key;
 }
 
-export default function ReportScreen({ navigation }) {
+export default function ReportScreen({ navigation, initialLanguage = "en" }) {
   const { token, isAuthenticated } = useAuth();
   const [step, setStep] = useState(1);
-  const [form, setForm] = useState(initialForm);
+  const [form, setForm] = useState(() => initialFormForLanguage(initialLanguage));
   const [errors, setErrors] = useState({});
   const [apiError, setApiError] = useState("");
   const [success, setSuccess] = useState(null);
@@ -484,21 +536,21 @@ export default function ReportScreen({ navigation }) {
     const lng = Number(location.lng ?? location.longitude);
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
 
-    setFootprintStatus("Loading OSM building footprints...");
+    setFootprintStatus(tr(form.language, "footprintLoading"));
     try {
       const osmFootprints = await fetchOsmBuildings({ lat, lng });
       if (osmFootprints.length) {
         setFootprints(osmFootprints);
-        setFootprintStatus(`${osmFootprints.length} OSM buildings loaded. Tap a footprint to attach it.`);
+        setFootprintStatus(`${osmFootprints.length} ${tr(form.language, "footprintLoaded")}`);
         return;
       }
       const fallback = createFootprintsAround({ lat, lng }, `${form.commune}, ${form.province}`);
       setFootprints(fallback);
-      setFootprintStatus("No OSM building found nearby. Offline selectable grid is available.");
+      setFootprintStatus(tr(form.language, "footprintNone"));
     } catch (error) {
       const fallback = createFootprintsAround({ lat, lng }, `${form.commune}, ${form.province}`);
       setFootprints(fallback);
-      setFootprintStatus("OSM is unavailable now. Offline selectable grid is available.");
+      setFootprintStatus(tr(form.language, "footprintUnavailable"));
     }
   }
 
@@ -564,8 +616,8 @@ export default function ReportScreen({ navigation }) {
     if (targetStep >= 2 && !form.crisisType) nextErrors.crisisType = "Select the incident type.";
     if (targetStep >= 3 && !form.image) nextErrors.image = "Add a photo of the damaged infrastructure.";
     if (targetStep >= 4) {
-      if (!form.title.trim() || form.title.trim().length < 3) nextErrors.title = "Add a short title.";
-      if (!form.description.trim() || form.description.trim().length < 10) nextErrors.description = "Add at least 10 characters.";
+      if (!form.title.trim() || form.title.trim().length < 3) nextErrors.title = tr(form.language, "titleError");
+      if (!form.description.trim() || form.description.trim().length < 10) nextErrors.description = tr(form.language, "descriptionError");
     }
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
@@ -668,6 +720,7 @@ export default function ReportScreen({ navigation }) {
     body.append("channel", "mobile");
     body.append("collectionTime", payload.collectionTime || new Date().toISOString());
     body.append("offlineCreatedAt", payload.offlineCreatedAt || "");
+    body.append("offlineSyncedAt", payload.offlineCreatedAt ? new Date().toISOString() : "");
     body.append("appVersion", "mobile-mvp");
     body.append("crisisId", payload.crisisId || "kinshasa-flood-response");
     body.append("buildingFootprintId", footprint?.id || payload.assetId.trim() || `${payload.province}-${payload.commune}-${Number(payload.lat).toFixed(5)}-${Number(payload.lng).toFixed(5)}`);
@@ -697,17 +750,18 @@ export default function ReportScreen({ navigation }) {
     if (submitting || !validate(4)) return;
     setSubmitting(true);
     setApiError("");
-    const payload = { ...form, selectedFootprint, dynamicArea, collectionTime: new Date().toISOString(), offlineCreatedAt: new Date().toISOString() };
+    const payload = { ...form, selectedFootprint, dynamicArea, collectionTime: new Date().toISOString() };
     try {
       await sendPayload(payload);
       setSuccess({ mode: "sent", payload });
-      setForm(initialForm);
+      setForm(initialFormForLanguage(payload.language));
     } catch (sendError) {
       try {
-        await saveOfflineReport(payload);
+        const offlinePayload = { ...payload, offlineCreatedAt: new Date().toISOString() };
+        await saveOfflineReport(offlinePayload);
         await refreshOfflineCount();
-        setSuccess({ mode: "offline", payload, reason: sendError.message });
-        setForm(initialForm);
+        setSuccess({ mode: "offline", payload: offlinePayload, reason: sendError.message });
+        setForm(initialFormForLanguage(payload.language));
       } catch (offlineError) {
         setApiError(offlineError.message || "Unable to save this report offline. Please keep the app open and try again.");
       }
@@ -723,7 +777,7 @@ export default function ReportScreen({ navigation }) {
       const result = await syncOfflineReports(sendPayload);
       await refreshOfflineCount();
       if (result.failed.length > 0) {
-        setApiError(`${result.failed.length} report(s) still offline. They will sync when the connection returns.`);
+        setApiError(`${result.failed.length} ${tr(form.language, "stillOffline")}`);
       }
     } catch (error) {
       setApiError(error.message);
@@ -834,7 +888,7 @@ export default function ReportScreen({ navigation }) {
                     <Ionicons name="camera-outline" size={42} color={colors.primary} />
                   </View>
                   <Text style={styles.photoTitle}>{tr(form.language, "takePhoto")}</Text>
-                  <Text style={styles.photoHint}>or upload from gallery</Text>
+                  <Text style={styles.photoHint}>{tr(form.language, "uploadHint")}</Text>
                 </View>
               )}
             </Pressable>
@@ -855,7 +909,7 @@ export default function ReportScreen({ navigation }) {
           <View>
             <ScreenTitle title={tr(form.language, "describe")} subtitle={tr(form.language, "describeSub")} />
             <FieldBlock label={tr(form.language, "title")} error={errors.title}>
-              <TextInput value={form.title} onChangeText={(value) => update("title", value.slice(0, 80))} placeholder="E.g. Bridge partially damaged" placeholderTextColor="#94a3b8" style={styles.input} />
+              <TextInput value={form.title} onChangeText={(value) => update("title", value.slice(0, 80))} placeholder={tr(form.language, "titlePlaceholder")} placeholderTextColor="#94a3b8" style={styles.input} />
               <Text style={styles.counter}>{form.title.length}/80</Text>
             </FieldBlock>
             <FieldBlock label={tr(form.language, "details")} error={errors.description}>
@@ -870,10 +924,10 @@ export default function ReportScreen({ navigation }) {
               <Text style={styles.counter}>{form.description.length}/500</Text>
             </FieldBlock>
             <FieldBlock label={tr(form.language, "infraName")}>
-              <TextInput value={form.infrastructureName} onChangeText={(value) => update("infrastructureName", value.slice(0, 120))} placeholder="E.g. Central market bridge" placeholderTextColor="#94a3b8" style={styles.input} />
+              <TextInput value={form.infrastructureName} onChangeText={(value) => update("infrastructureName", value.slice(0, 120))} placeholder={tr(form.language, "infraPlaceholder")} placeholderTextColor="#94a3b8" style={styles.input} />
             </FieldBlock>
             <FieldBlock label={tr(form.language, "buildingId")}>
-              <TextInput value={form.assetId} onChangeText={(value) => update("assetId", value.slice(0, 80))} placeholder="Optional building footprint or local ID" placeholderTextColor="#94a3b8" style={styles.input} />
+              <TextInput value={form.assetId} onChangeText={(value) => update("assetId", value.slice(0, 80))} placeholder={tr(form.language, "assetPlaceholder")} placeholderTextColor="#94a3b8" style={styles.input} />
             </FieldBlock>
             <Text style={styles.smallLabel}>Reporter details for admin follow-up</Text>
             <FieldBlock label="Name optional">
@@ -922,7 +976,7 @@ export default function ReportScreen({ navigation }) {
               <ToggleRow label="Livelihoods affected" value={form.livelihoodsAffected} onPress={() => update("livelihoodsAffected", !form.livelihoodsAffected)} />
               <ToggleRow label="People at risk" value={form.peopleAtRisk} onPress={() => update("peopleAtRisk", !form.peopleAtRisk)} />
             </View>
-            <PrimaryButton title={submitting ? "Sending..." : tr(form.language, "send")} icon="paper-plane-outline" onPress={submit} disabled={submitting} />
+            <PrimaryButton title={submitting ? tr(form.language, "sending") : tr(form.language, "send")} icon="paper-plane-outline" onPress={submit} disabled={submitting} />
             <Text style={styles.offlineNote}>{tr(form.language, "offline")}</Text>
           </View>
         ) : null}
@@ -931,7 +985,7 @@ export default function ReportScreen({ navigation }) {
           <View>
             <ScreenTitle title={tr(form.language, "where")} subtitle={tr(form.language, "whereSub")} />
             <SecondaryButton title={tr(form.language, "gps")} icon="locate-outline" onPress={useCurrentLocation} strong />
-            <SecondaryButton title="Load building footprints" icon="business-outline" onPress={() => loadFootprints({ lat: form.lat, lng: form.lng })} />
+            <SecondaryButton title={tr(form.language, "loadFootprints")} icon="business-outline" onPress={() => loadFootprints({ lat: form.lat, lng: form.lng })} />
             <Pressable
               style={styles.nativeMapWrap}
               onLayout={(event) => setMapSize(event.nativeEvent.layout)}
@@ -984,7 +1038,7 @@ export default function ReportScreen({ navigation }) {
               <TextInput
                 value={form.locationDescription}
                 onChangeText={(value) => update("locationDescription", value.slice(0, 260))}
-                placeholder="E.g. school near the central market"
+                placeholder={tr(form.language, "landmarkPlaceholder")}
                 placeholderTextColor="#94a3b8"
                 multiline
                 style={[styles.input, styles.landmarkInput]}
@@ -992,11 +1046,11 @@ export default function ReportScreen({ navigation }) {
             </FieldBlock>
             <View style={styles.locationCard}>
               <View>
-                <Text style={styles.coordLabel}>Coordinates</Text>
+                <Text style={styles.coordLabel}>{tr(form.language, "coordinates")}</Text>
                 <Text style={styles.coordValue}>{Number(form.lat).toFixed(5)}, {Number(form.lng).toFixed(5)}</Text>
                 {dynamicArea?.country ? <Text style={styles.coordArea}>{dynamicArea.country}</Text> : null}
               </View>
-              <Text style={styles.editText}>Ready</Text>
+              <Text style={styles.editText}>{tr(form.language, "ready")}</Text>
             </View>
             <Text style={styles.smallLabel}>{tr(form.language, "area")}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
